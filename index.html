@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trivia-fodbold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1510;--panel:#13221a;--panel2:#1a2e23;--line:rgba(255,255,255,.12);
+  --text:#eef5ef;--muted:#9db3a5;
+  --red:#ef4444;--blue:#3b82f6;
+  --l1:#22c55e;--l2:#eab308;--l3:#f97316;--l4:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+body{min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#1d3a2a 0%,var(--bg) 60%)}
+.wrap{max-width:1040px;margin:0 auto;padding:16px 14px 40px}
+button{font-family:inherit;cursor:pointer}
+.oswald{font-family:Oswald,Impact,sans-serif;letter-spacing:.02em}
+
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:0;background:#0a0f0c;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.side{display:flex;align-items:center;gap:12px;padding:10px 16px}
+.side.r{justify-content:flex-end}
+.chip{width:14px;height:34px;border-radius:4px}
+.tname{font-family:Oswald,sans-serif;font-size:24px;font-weight:500;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mid{display:flex;align-items:center;gap:0;background:#f4f4f0;color:#0a0f0c}
+.sc{font-family:Oswald,sans-serif;font-weight:700;font-size:34px;padding:4px 16px;min-width:56px;text-align:center}
+.clock{font-family:Oswald,sans-serif;font-weight:500;font-size:18px;background:#0a0f0c;color:#facc15;padding:0 12px;align-self:stretch;display:flex;align-items:center}
+.poss{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.side.active .tname::after{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:#facc15;margin-left:8px;vertical-align:middle;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+.status{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 2px 8px;font-size:15px;height:24px}
+#status{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend{flex-shrink:0}
+.status b{font-weight:600}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+.pitchwrap{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#1f6b35}
+svg{display:block;width:100%;height:auto;user-select:none}
+.pl{transition:transform .75s cubic-bezier(.4,.1,.2,1);cursor:default}
+.pl.can{cursor:pointer}
+.pl.can:hover .body{stroke:#facc15;stroke-width:4}
+.ballg{transition:transform .6s cubic-bezier(.3,.1,.2,1)}
+#trails{opacity:0}#trails.fade{animation:trailfade 1.8s ease forwards}
+@keyframes trailfade{0%{opacity:0}20%{opacity:.95}70%{opacity:.8}100%{opacity:0}}
+#space.on{cursor:crosshair}
+.pname{font-family:Inter,sans-serif;font-size:13px;font-weight:600;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.7);stroke-width:3.5px;stroke-linejoin:round}
+.ballg.fast{transition:transform .45s cubic-bezier(.2,.6,.3,1)}
+.goalhot{cursor:pointer}
+.goalhot:hover rect.hl{opacity:.35}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.bigtext{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(48px,12vw,130px);color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.35);opacity:0;transform:scale(.4)}
+.bigtext.show{animation:pop 2.2s ease forwards}
+@keyframes pop{0%{opacity:0;transform:scale(.4) rotate(-6deg)}15%{opacity:1;transform:scale(1.12) rotate(2deg)}25%{transform:scale(1) rotate(0)}80%{opacity:1}100%{opacity:0;transform:scale(1.05)}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:12px}
+.qhead{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;color:#0a0f0c;text-transform:uppercase;letter-spacing:.06em}
+.cat{font-size:13px;color:var(--muted)}
+.qtext{font-size:21px;font-weight:600;line-height:1.4;margin:4px 0 14px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:14px 14px;border-radius:10px;font-size:16px;text-align:left;transition:background .15s,border-color .15s}
+.opt:hover:not(:disabled){border-color:#facc15;background:#223a2c}
+.opt:disabled{cursor:default}
+.opt.sel{border-color:#a78bfa;background:#2e2650}
+.opt.right{background:#14532d;border-color:var(--l1)}
+.opt.wrong{background:#5b1515;border-color:var(--l4)}
+.opt .k{display:inline-block;width:22px;color:var(--muted);font-weight:600}
+.tk{margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:46px}
+.tkbar{flex:1;min-width:140px;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.tkbar div{height:100%;width:0;background:#94a3b8}
+.tkbtn{border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:700;font-family:Oswald,sans-serif;letter-spacing:.04em;animation:tkp 0.8s infinite alternate}
+@keyframes tkp{to{transform:scale(1.05)}}
+.kgoal{display:block;width:100%;max-width:420px;margin:6px auto 10px}
+.kz{cursor:pointer}.kz:hover rect{fill:rgba(250,204,21,.35)}
+.kbar{position:relative;height:34px;border-radius:8px;overflow:hidden;display:flex;margin:8px 0 12px;border:1px solid var(--line)}
+.kbar div.seg{height:100%}
+.kind{position:absolute;top:-4px;width:6px;height:42px;background:#fff;border-radius:3px;box-shadow:0 0 0 2px #0a0f0c;left:0}
+.timer{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.timer div{height:100%;background:#facc15;width:100%}
+.res{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap}
+.res .msg{font-family:Oswald,sans-serif;font-size:24px;font-weight:500}
+.btn{background:#facc15;color:#0a0f0c;border:0;border-radius:10px;padding:12px 20px;font-size:16px;font-weight:600}
+.btn:hover{background:#fde047}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.feed{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.7}
+.feed div:first-child{color:var(--text)}
+
+.setup{max-width:680px;margin:30px auto}
+.setup h1{font-family:Oswald,sans-serif;font-size:44px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em}
+.setup p.sub{color:var(--muted);margin:0 0 20px;line-height:1.55}
+.trow{display:grid;grid-template-columns:14px 0.8fr 1.5fr 1.2fr;gap:8px;align-items:center;margin-bottom:10px}
+input[type=text],select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:16px;font-family:inherit;width:100%}
+label.f{display:block;font-size:13px;color:var(--muted);margin:16px 0 6px}
+.chk{display:flex;gap:10px;align-items:center;margin-top:14px;font-size:15px}
+.rules{font-size:14px;color:var(--muted);line-height:1.6;margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.rules b{color:var(--text);font-weight:600}
+.pens{display:flex;gap:28px;justify-content:center;margin:6px 0 4px;flex-wrap:wrap}
+.pens .row{display:flex;align-items:center;gap:8px}
+.dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line)}
+.dot.g{background:var(--l1);border-color:var(--l1)}
+.dot.m{background:var(--l4);border-color:var(--l4)}
+@media(max-width:640px){
+  .legend{display:none}
+  .tname{font-size:16px;max-width:90px}.sc{font-size:26px;padding:4px 10px;min-width:40px}.clock{font-size:15px;padding:0 8px}
+  .opts{grid-template-columns:1fr}.qtext{font-size:18px}.side{padding:8px 10px;gap:8px}.chip{height:26px;width:10px}
+  .trow{grid-template-columns:10px 1fr 1fr}.trow select.lv{grid-column:2/4}
+}
+.tabs{display:flex;gap:8px;margin:0 0 18px}
+.tab{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:11px;border-radius:10px;font-weight:600;font-size:15px}
+.tab.on{background:#facc15;color:#0a0f0c;border-color:#facc15}
+.hubtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.coins{font-family:Oswald,sans-serif;font-size:24px;font-weight:700;color:#facc15}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--muted)}
+.stat b{display:block;font-family:Oswald,sans-serif;font-size:22px;color:var(--text);font-weight:700}
+.plist{display:grid;gap:6px;margin-top:8px}
+.prow{display:grid;grid-template-columns:46px 1fr auto auto;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.rt{font-family:Oswald,sans-serif;font-weight:700;font-size:20px;text-align:center;border-radius:8px;padding:3px 0;color:#0a0f0c}
+.pmeta{font-size:12px;color:var(--muted)}
+.btn.sm{padding:7px 12px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:default}
+.lpitch{position:relative;width:100%;max-width:520px;aspect-ratio:3/4;margin:12px auto 6px;border-radius:14px;background:repeating-linear-gradient(0deg,#2f9a4d 0 12.5%,#2a8a45 12.5% 25%);border:2px solid rgba(255,255,255,.6);overflow:hidden}
+.lpitch:before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px solid rgba(255,255,255,.5)}
+.lpitch:after{content:"";position:absolute;left:50%;top:50%;width:26%;aspect-ratio:1;border:2px solid rgba(255,255,255,.5);border-radius:50%;transform:translate(-50%,-50%)}
+.lbox{position:absolute;left:28%;right:28%;height:14%;border:2px solid rgba(255,255,255,.5)}
+.lcard{position:absolute;transform:translate(-50%,-50%);width:23%;min-width:86px;background:rgba(10,15,12,.88);border:2px solid rgba(255,255,255,.25);border-radius:10px;padding:5px 4px;text-align:center;cursor:pointer;z-index:2;color:var(--text);font-family:inherit}
+.lcard:hover{border-color:#facc15}.lcard.sel{border-color:#facc15;box-shadow:0 0 0 3px rgba(250,204,21,.35)}
+.lcard .rt{font-size:18px;padding:1px 0;margin-bottom:3px}
+.lcard .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcard .ps{font-size:10px;color:var(--muted)}
+.lcard .warn{color:#fca5a5}
+.slot{display:grid;grid-template-columns:110px 1fr 46px;gap:10px;align-items:center;margin-bottom:6px}
+.slot select{padding:8px 10px;font-size:14px}
+.ltab{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.ltab th{color:var(--muted);font-weight:500;text-align:right;padding:5px 4px;font-size:12px}
+.ltab td{padding:6px 4px;text-align:right;border-top:1px solid var(--line)}
+.ltab td:nth-child(2),.ltab th:nth-child(2){text-align:left}
+.ltab tr.me td{background:rgba(250,204,21,.12);font-weight:600}
+.ltab tr.up td:first-child{color:var(--l1)}.ltab tr.down td:first-child{color:var(--l4)}
+.card2{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="setup" class="setup card">
+  <h1>Trivia-fodbold</h1>
+  <p class="sub">Spil fodbold med din viden. Lette spørgsmål giver korte afleveringer, svære spørgsmål giver lange bolde og skud langt udefra. Svarer du forkert, overtager modstanderen bolden.</p>
+  <div class="tabs"><button class="tab on" id="tab2">To spillere</button><button class="tab" id="tabC">Karriere mod computeren</button></div>
+  <div id="mode2">
+  <label class="f">Spiller, hold og niveau</label>
+  <div class="trow"><div class="chip" id="sc0"></div><input type="text" id="n0" value="Far" maxlength="12"><select id="c0"></select><select id="o0" class="lv"><option value="0">Normale spørgsmål</option><option value="-1">Lettere spørgsmål</option><option value="1">Sværere spørgsmål</option></select></div>
+  <div class="trow"><div class="chip" id="sc1"></div><input type="text" id="n1" value="Søn" maxlength="12"><select id="c1"></select><select id="o1" class="lv"><option value="0">Normale spørgsmål</option><option value="-1">Lettere spørgsmål</option><option value="1">Sværere spørgsmål</option></select></div>
+  <label class="f">Kamplængde</label>
+  <select id="len"><option value="6">Kort kamp (ca. 15 spørgsmål)</option><option value="4" selected>Normal kamp (ca. 22 spørgsmål)</option><option value="3">Lang kamp (ca. 30 spørgsmål)</option></select>
+  <label class="f">Tackling</label><select id="tkSel"><option value="10">Forsvaret kan tackle efter 10 sekunder</option><option value="15" selected>Forsvaret kan tackle efter 15 sekunder</option><option value="20">Forsvaret kan tackle efter 20 sekunder</option><option value="0">Ingen tackling</option></select>
+  <div style="margin-top:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap"><button class="btn" id="start">Spark kampen i gang</button><span id="seeninfo" style="font-size:13px;color:var(--muted)"></span><button class="btn ghost" id="resetseen" style="padding:8px 12px;font-size:13px">Nulstil brugte spørgsmål</button></div>
+  </div>
+  <div id="modeC" class="hidden"></div>
+  <div class="rules">
+    <b>Sådan spiller du.</b> Holdet med bolden klikker på en medspiller for at aflevere, på et frit område foran en medspiller for at lave en <b>stikning</b>, tæt på boldholderen (eller på ham selv) for at <b>drible</b>, eller på modstanderens mål for at skyde. Jo flere modspillere man dribler forbi, jo sværere bliver spørgsmålet. Tallet over hver spiller viser, hvor svært spørgsmålet bliver:
+    <span style="color:var(--l1)">1 Let</span>, <span style="color:var(--l2)">2 Mellem</span>, <span style="color:var(--l3)">3 Svær</span>, <span style="color:var(--l4)">4 Legendarisk</span>.
+    Lange afleveringer, stikninger og modspillere i vejen gør det sværere. Når man skyder, vælger man selv, hvor i målet bolden skal hen, og stopper markøren på bjælken. Jo længere ude, jo mindre grønt felt. Det er nemmest at score med angriberen og svært med en forsvarer. Målmanden kan ikke skyde, og man kan ikke skyde fra mere end ca. 40 meter. Fra 30 til 40 meter kræver et skud to legendariske svar i træk. Et rigtigt skud er mål, et forkert skud bliver grebet af målmanden. Tænker det angribende hold for længe, og står en forsvarer tæt på boldholderen, kan forsvaret trykke <b>TACKL!</b> og svare på et tacklingsspørgsmål: svært for en forsvarer og legendarisk for alle andre. Rigtigt svar vinder bolden, forkert svar giver frispark. Fælder forsvaret i feltet, bliver det <b>straffespark</b>, og et frispark tæt på mål kan skydes direkte. Så vælger man, hvor i målet man vil sparke, og stopper markøren på bjælken: grøn er mål, gul giver et legendarisk spørgsmål, og rød er forbi. Står det lige efter 90 minutter, bliver kampen afgjort på straffespark.
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <div class="board">
+    <div class="side" id="s0"><div class="chip" id="bc0"></div><div><div class="tname" id="t0">Far</div><div class="poss" id="p0">&nbsp;</div></div></div>
+    <div class="mid"><div class="sc" id="g0">0</div><div class="clock" id="clock">0'</div><div class="sc" id="g1">0</div></div>
+    <div class="side r" id="s1"><div style="text-align:right"><div class="tname" id="t1">Søn</div><div class="poss" id="p1">&nbsp;</div></div><div class="chip" id="bc1"></div></div>
+  </div>
+  <div class="status">
+    <div id="status"></div>
+    <div class="legend"><span><i style="background:var(--l1)"></i>Let</span><span><i style="background:var(--l2)"></i>Mellem</span><span><i style="background:var(--l3)"></i>Svær</span><span><i style="background:var(--l4)"></i>Legendarisk</span></div>
+  </div>
+  <div class="pitchwrap">
+    <svg id="svg" viewBox="0 0 1000 640" aria-label="Fodboldbane">
+      <defs>
+        <marker id="arr0" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path id="arrp0" d="M0 0L10 5L0 10z" fill="#fff"/></marker>
+        <marker id="arr1" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path id="arrp1" d="M0 0L10 5L0 10z" fill="#fff"/></marker>
+        <pattern id="net" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8M8 0L0 8" stroke="rgba(255,255,255,.45)" stroke-width="1"/></pattern>
+        <radialGradient id="vig" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".35"/></radialGradient>
+      </defs>
+      <g id="stripes"></g>
+      <g fill="none" stroke="rgba(255,255,255,.75)" stroke-width="3">
+        <rect x="40" y="30" width="920" height="580"/>
+        <line x1="500" y1="30" x2="500" y2="610"/>
+        <circle cx="500" cy="320" r="84"/>
+        <rect x="40" y="135" width="152" height="370"/>
+        <rect x="808" y="135" width="152" height="370"/>
+        <rect x="40" y="236" width="51" height="168"/>
+        <rect x="909" y="236" width="51" height="168"/>
+        <path d="M192 260 A84 84 0 0 1 192 380"/>
+        <path d="M808 260 A84 84 0 0 0 808 380"/>
+      </g>
+      <g fill="rgba(255,255,255,.85)"><circle cx="500" cy="320" r="4"/><circle cx="141" cy="320" r="4"/><circle cx="859" cy="320" r="4"/></g>
+      <rect x="14" y="287" width="26" height="66" fill="url(#net)" stroke="#fff" stroke-width="3"/>
+      <rect x="960" y="287" width="26" height="66" fill="url(#net)" stroke="#fff" stroke-width="3"/>
+      <rect x="0" y="0" width="1000" height="640" fill="url(#vig)" pointer-events="none"/>
+      <rect id="space" x="40" y="30" width="920" height="580" fill="transparent"/>
+      <g id="goalhot0" class="goalhot hidden"><rect class="hl" x="0" y="250" width="100" height="140" fill="#facc15" opacity="0"/><g id="gb0"></g></g>
+      <g id="goalhot1" class="goalhot hidden"><rect class="hl" x="900" y="250" width="100" height="140" fill="#facc15" opacity="0"/><g id="gb1"></g></g>
+      <g id="trails" pointer-events="none"></g>
+      <g id="preview" pointer-events="none"></g>
+      <g id="players"></g>
+      <g id="ball" class="ballg"><circle r="8" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M-3 -3l3 -2 3 2 -1 3h-4z" fill="#111"/></g>
+    </svg>
+    <div class="overlay"><div class="bigtext" id="big">MÅL!</div></div>
+  </div>
+  <div class="card" id="panel"></div>
+</div>
+</div>
+
+<script>
+const LV={1:{n:'Let',c:'var(--l1)'},2:{n:'Mellem',c:'var(--l2)'},3:{n:'Svær',c:'var(--l3)'},4:{n:'Legendarisk',c:'var(--l4)'}};
+let COL=['#ef4444','#3b82f6'],TXT=['#fff','#fff'];
+const GKC=['#f59e0b','#a3e635'];
+// rækkefølge: målmand, venstre midterforsvarer, højre midterforsvarer, venstre central midt, højre central midt, venstre kant, højre kant, angriber
+const CLUBS=[
+{name:'Liverpool 24/25',short:'Liverpool',col:'#c8102e',txt:'#fff',away:'#f5f5f5',atxt:'#c8102e',pl:[[1,'Alisson'],[4,'Van Dijk'],[5,'Konaté'],[10,'Mac Allister'],[8,'Szoboszlai'],[18,'Gakpo'],[11,'Salah'],[7,'Luis Díaz']]},
+{name:'Arsenal 25/26',short:'Arsenal',col:'#ef0107',txt:'#fff',away:'#f5f5f5',atxt:'#ef0107',pl:[[22,'Raya'],[6,'Gabriel'],[2,'Saliba'],[41,'Rice'],[8,'Ødegaard'],[11,'Martinelli'],[7,'Saka'],[14,'Gyökeres']]},
+{name:'Man City 22/23',short:'Man City',col:'#6cabdd',txt:'#0b2545',away:'#1c2c5b',atxt:'#fff',pl:[[31,'Ederson'],[25,'Akanji'],[3,'Dias'],[16,'Rodri'],[17,'De Bruyne'],[10,'Grealish'],[20,'Bernardo Silva'],[9,'Haaland']]},
+{name:'PSG 24/25',short:'PSG',col:'#004170',txt:'#fff',away:'#f5f5f5',atxt:'#004170',pl:[[1,'Donnarumma'],[51,'Pacho'],[5,'Marquinhos'],[17,'Vitinha'],[87,'João Neves'],[7,'Kvaratskhelia'],[14,'Doué'],[10,'Dembélé']]},
+{name:'Barcelona 24/25',short:'Barcelona',col:'#a50044',txt:'#fff',away:'#edbb00',atxt:'#3b1a00',pl:[[25,'Szczęsny'],[5,'Iñigo Martínez'],[2,'Cubarsí'],[8,'Pedri'],[21,'De Jong'],[11,'Raphinha'],[19,'Lamine Yamal'],[9,'Lewandowski']]},
+{name:'Real Madrid 24/25',short:'Real Madrid',col:'#f5f5f5',txt:'#1b1b3a',away:'#1b1b3a',atxt:'#fff',pl:[[1,'Courtois'],[22,'Rüdiger'],[3,'Militão'],[5,'Bellingham'],[8,'Valverde'],[7,'Vinícius'],[11,'Rodrygo'],[9,'Mbappé']]},
+{name:'Bayern München 24/25',short:'Bayern',col:'#dc052d',txt:'#fff',away:'#f5f5f5',atxt:'#dc052d',pl:[[1,'Neuer'],[2,'Upamecano'],[3,'Kim Min-jae'],[6,'Kimmich'],[42,'Musiala'],[10,'Sané'],[17,'Olise'],[9,'Kane']]},
+{name:'Spanien EM 2024',short:'Spanien',col:'#c60b1e',txt:'#fff',away:'#f1bf00',atxt:'#5a0a0a',pl:[[23,'Unai Simón'],[14,'Laporte'],[3,'Le Normand'],[16,'Rodri'],[8,'Fabián Ruiz'],[17,'Nico Williams'],[19,'Lamine Yamal'],[7,'Morata']]},
+{name:'Argentina VM 2022',short:'Argentina',col:'#75aadb',txt:'#0b2545',away:'#1d2c5b',atxt:'#fff',pl:[[23,'E. Martínez'],[19,'Otamendi'],[13,'Romero'],[24,'Enzo Fernández'],[7,'De Paul'],[11,'Di María'],[10,'Messi'],[9,'J. Álvarez']]},
+{name:'Danmark EM 1992',short:'Danmark',col:'#c60c30',txt:'#fff',away:'#f5f5f5',atxt:'#c60c30',pl:[[1,'Schmeichel'],[3,'Kent Nielsen'],[4,'Lars Olsen'],[6,'John Jensen'],[18,'Vilfort'],[10,'Henrik Larsen'],[11,'B. Laudrup'],[9,'Povlsen']]}
+];
+const hexRgb=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
+const cdist=(a,b)=>{const x=hexRgb(a),y=hexRgb(b);return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2])};
+// [kategori, spørgsmål, rigtigt svar, forkert, forkert, forkert]
+const BANK={
+1:[
+["Ballon d'Or","Hvem vandt Ballon d'Or i 2025?","Ousmane Dembélé","Lamine Yamal","Kylian Mbappé","Mohamed Salah"],
+["Klub-VM","Hvilken klub vandt det store klub-VM i USA i 2025?","Chelsea","PSG","Real Madrid","Manchester City"],
+["EM","Hvem slog Danmark i EM-finalen 1992?","Tyskland","Holland","Sverige","England"],
+["VM","Zidane fik rødt kort i VM-finalen 2006. Hvilket land vandt?","Italien","Frankrig","Tyskland","Portugal"],
+["Premier League","Hvem var Liverpools træner, da de vandt Premier League 2024/25?","Arne Slot","Jürgen Klopp","Erik ten Hag","Xabi Alonso"],
+["La Liga","Hvem er træner for Barcelona, der vandt La Liga i 2025 og 2026?","Hansi Flick","Xavi","Luis Enrique","Carlo Ancelotti"],
+["Bundesliga","Hvem er Bayern Münchens belgiske træner?","Vincent Kompany","Thomas Tuchel","Julian Nagelsmann","Xabi Alonso"],
+["Premier League","Hvem er træner for Arsenal?","Mikel Arteta","Unai Emery","Arsène Wenger","Pep Guardiola"],
+["Champions League","Hvem er træner for PSG?","Luis Enrique","Mauricio Pochettino","Thomas Tuchel","Zinedine Zidane"],
+["Superligaen","Hvilken klub blev dansk mester i 2025?","FC København","FC Midtjylland","Brøndby","AGF"],
+["Superligaen","Hvilken klub blev dansk mester i 2024?","FC Midtjylland","FC København","Brøndby","AGF"],
+["Champions League","Hvilken klub tabte Champions League-finalen i 2026?","Arsenal","Inter","Bayern München","Liverpool"],
+["VM","Hvem tabte VM-finalen 2026?","Argentina","Frankrig","England","Portugal"],
+["EM","Hvem tabte EM-finalen 2024?","England","Frankrig","Tyskland","Holland"],
+["VM","Hvor blev VM 2026 spillet?","USA, Canada og Mexico","Kun i USA","Brasilien","Spanien, Portugal og Marokko"],
+["VM","Hvor mange hold var med ved VM 2026?","48","32","40","64"],
+["VM","Hvilket land vandt VM 2018?","Frankrig","Kroatien","Belgien","Tyskland"],
+["VM","Hvilket land vandt VM 2014 i Brasilien?","Tyskland","Argentina","Brasilien","Holland"],
+["VM","Hvilket land vandt VM 2010?","Spanien","Holland","Tyskland","Brasilien"],
+["Premier League","Hvem blev topscorer i Premier League 2024/25?","Mohamed Salah","Erling Haaland","Alexander Isak","Cole Palmer"],
+["Bundesliga","Hvem blev topscorer i Bundesligaen 2025/26?","Harry Kane","Serhou Guirassy","Michael Olise","Jamal Musiala"],
+["La Liga","Hvad hedder Real Madrids stadion?","Santiago Bernabéu","Camp Nou","Mestalla","San Siro"],
+["Premier League","Hvilken klub spiller på Anfield?","Liverpool","Everton","Manchester United","Arsenal"],
+["La Liga","Hvilken klub blev Xabi Alonso træner for i 2025?","Real Madrid","Liverpool","Bayern München","Manchester City"],
+["VM","Hvilket land vandt VM 1998 på hjemmebane?","Frankrig","Brasilien","Italien","Tyskland"],
+["Ballon d'Or","Hvem har vundet Ballon d'Or flest gange?","Lionel Messi","Cristiano Ronaldo","Michel Platini","Johan Cruyff"],
+["Superligaen","Hvor mange hold spiller i Superligaen?","12","10","14","16"],
+["EM","Hvilken dansk spiller faldt om med hjertestop ved EM 2021?","Christian Eriksen","Simon Kjær","Kasper Schmeichel","Pierre-Emile Højbjerg"],
+["Superligaen","Hvilken klub spiller i Herning?","FC Midtjylland","AGF","Viborg","Silkeborg"],
+["La Liga","Hvilken teenagestjerne fra Barcelona blev nr. 2 til Ballon d'Or 2025?","Lamine Yamal","Pedri","Gavi","Fermín López"],
+["Superligaen","I hvilken by hører AGF hjemme?","Aarhus","Odense","Aalborg","Vejle"],
+["Superligaen","Hvilken klub spiller hjemmekampe i Parken?","FC København","Brøndby","AGF","OB"],
+["Premier League","Hvilken klub kaldes De Røde Djævle?","Manchester United","Liverpool","Arsenal","Nottingham Forest"],
+["Premier League","Hvilken klub spiller på Old Trafford?","Manchester United","Manchester City","Liverpool","Everton"],
+["La Liga","Hvilken klub spiller på Camp Nou?","Barcelona","Real Madrid","Valencia","Sevilla"],
+["Bundesliga","Hvilken klub spiller på Allianz Arena?","Bayern München","Borussia Dortmund","RB Leipzig","Bayer Leverkusen"],
+["Bundesliga","Hvilken klub spiller på Signal Iduna Park?","Borussia Dortmund","Schalke 04","Bayern München","1. FC Köln"],
+["Serie A","I hvilken by spiller Juventus?","Torino","Milano","Rom","Napoli"],
+["Spillere","Hvilket land kommer Mohamed Salah fra?","Egypten","Marokko","Tunesien","Algeriet"],
+["Spillere","Hvilket land kommer Kevin De Bruyne fra?","Belgien","Holland","Tyskland","Frankrig"],
+["Spillere","Hvilket land kommer Luka Modrić fra?","Kroatien","Serbien","Slovenien","Bosnien-Hercegovina"],
+["Spillere","Hvilket land kommer Vinícius Júnior fra?","Brasilien","Portugal","Argentina","Colombia"],
+["Spillere","Hvilket land kommer Robert Lewandowski fra?","Polen","Tjekkiet","Ukraine","Slovakiet"],
+["Transfers","Hvilken klub købte Erling Haaland fra Dortmund i 2022?","Manchester City","Real Madrid","Bayern München","Chelsea"],
+["Transfers","Hvilken klub kom Harry Kane fra, da han skiftede til Bayern i 2023?","Tottenham","Arsenal","Chelsea","Manchester United"],
+["Transfers","Hvilken klub skiftede Jude Bellingham til i 2023?","Real Madrid","Liverpool","Manchester City","Barcelona"],
+["Transfers","Hvilken klub skiftede Kylian Mbappé til i 2024?","Real Madrid","Liverpool","Barcelona","Arsenal"],
+["Superligaen","I hvilken by spiller OB?","Odense","Aarhus","Vejle","Esbjerg"],
+["Regler","Hvor mange point får man for en sejr i ligaen?","3","2","1","4"],
+["Regler","Hvad kaldes det, når en spiller scorer tre mål i én kamp?","Hattrick","Brace","Triplet","Tredobler"],
+["Regler","Hvad bruges VAR til?","At hjælpe dommeren med videooptagelser","At måle boldens fart","At tælle tilskuerne","At bestemme tillægstiden"],
+["Champions League","Hvilken klub har vundet Champions League flest gange?","Real Madrid","AC Milan","Bayern München","Liverpool"],
+["EM","Hvilket land var vært for EM 2024?","Tyskland","Frankrig","England","Spanien"],
+["Premier League","Hvilken klub spiller på Stamford Bridge?","Chelsea","Everton","Manchester City","Leicester City"],
+["Premier League","Hvilken klub spiller på Etihad Stadium?","Manchester City","Manchester United","Newcastle","Aston Villa"],
+["Serie A","I hvilken by ligger stadionet San Siro?","Milano","Rom","Torino","Napoli"],
+["VM","Hvilket land var vært for VM 2014?","Brasilien","Argentina","Mexico","Sydafrika"],
+["Spillere","Hvilket landshold spiller Rasmus Højlund for?","Danmark","Norge","Sverige","Island"],
+{"m":1,"c":"Spillere","q":"Hvilke tre af disse spillere har spillet for Real Madrid?","r":["Cristiano Ronaldo", "Kylian Mbappé", "Jude Bellingham"],"w":"Lionel Messi"},
+{"m":1,"c":"Danmark","q":"Hvilke tre af disse spillere har spillet på Danmarks landshold?","r":["Christian Eriksen", "Rasmus Højlund", "Pierre-Emile Højbjerg"],"w":"Erling Haaland"},
+{"m":1,"c":"VM","q":"Hvilke tre af disse lande har vundet VM?","r":["Spanien", "Frankrig", "England"],"w":"Holland"},
+{"m":1,"c":"La Liga","q":"Hvilke tre af disse klubber kommer fra Spanien?","r":["Real Madrid", "Barcelona", "Atlético Madrid"],"w":"Juventus"},
+{"m":1,"c":"Spillere","q":"Hvilke tre af disse spillere har spillet for Barcelona?","r":["Lionel Messi", "Lamine Yamal", "Neymar"],"w":"Kylian Mbappé"},
+{"m":1,"c":"Premier League","q":"Hvilke tre af disse klubber kommer fra London?","r":["Arsenal", "Chelsea", "Tottenham"],"w":"Everton"},
+["Sjov", "Hvilken spiller er kendt for at råbe »Siuuu!«, når han scorer?", "Cristiano Ronaldo", "Lionel Messi", "Neymar", "Kylian Mbappé"],
+["Sjov", "Hvilket landshold kaldes La Roja (De Røde)?", "Spanien", "Italien", "Frankrig", "Brasilien"],
+["Sjov", "Hvilket landshold kaldes Les Bleus (De Blå)?", "Frankrig", "Italien", "Holland", "Belgien"],
+["Sjov", "Hvilket landshold kaldes Oranje?", "Holland", "Spanien", "Sverige", "Tyskland"],
+["Sjov", "Hvilken sang synger Liverpool-fans før kampene?", "You'll Never Walk Alone", "We Are the Champions", "Sweet Caroline", "Seven Nation Army"],
+["Sjov", "Hvilken spiller har kælenavnet La Pulga (Loppen)?", "Lionel Messi", "Neymar", "Luka Modrić", "Antoine Griezmann"],
+["Sjov", "Hvilket dyr er der i Tottenhams logo?", "En hane", "En løve", "En ørn", "En ulv"],
+["Sjov", "Hvilket dyr er der i Chelseas logo?", "En løve", "En hane", "En ørn", "En ged"]
+],
+2:[
+["VM","Hvem scorede det eneste mål i VM-finalen 2026?","Ferran Torres","Lamine Yamal","Mikel Oyarzabal","Nico Williams"],
+["Champions League","Hvad endte Champions League-finalen 2025 mellem PSG og Inter?","5-0","2-1","3-0","1-1, PSG vandt på straffe"],
+["Premier League","Hvem satte rekord med 21 assists i én Premier League-sæson i 2025/26?","Bruno Fernandes","Bukayo Saka","Mohamed Salah","Cole Palmer"],
+["Champions League","Hvem scorede Arsenals mål i Champions League-finalen 2026?","Kai Havertz","Bukayo Saka","Viktor Gyökeres","Declan Rice"],
+["Champions League","I hvilken by blev Champions League-finalen 2026 spillet?","Budapest","München","London","Istanbul"],
+["Champions League","I hvilken by blev Champions League-finalen 2025 spillet?","München","Paris","Madrid","London"],
+["Premier League","Arsenal vandt Premier League i 2026. Hvornår vandt de sidst før det?","2004","2002","1998","2008"],
+["Superligaen","Hvilken klub har næstflest Superliga-titler?","Brøndby","FC Midtjylland","AaB","OB"],
+["EM","Hvem scorede Danmarks 2-0 i EM-finalen 1992?","Kim Vilfort","John Jensen","Brian Laudrup","Flemming Povlsen"],
+["EM","Hvem var Danmarks landstræner ved EM 1992?","Richard Møller Nielsen","Sepp Piontek","Morten Olsen","Bo Johansson"],
+["EM","Hvem scorede Spaniens sejrsmål i EM-finalen 2024?","Mikel Oyarzabal","Nico Williams","Dani Olmo","Lamine Yamal"],
+["VM","Hvem scorede sejrsmålet i VM-finalen 2014?","Mario Götze","Thomas Müller","Miroslav Klose","Toni Kroos"],
+["VM","Hvem scorede sejrsmålet i VM-finalen 2010?","Andrés Iniesta","David Villa","Xavi","Fernando Torres"],
+["VM","Hvem scorede hattrick i VM-finalen 2022?","Kylian Mbappé","Lionel Messi","Ángel Di María","Olivier Giroud"],
+["Bundesliga","Hvilken klub vandt Bundesligaen 2023/24 uden at tabe en eneste kamp?","Bayer Leverkusen","Bayern München","Borussia Dortmund","VfB Stuttgart"],
+["Champions League","Hvem slog PSG ud i semifinalen i Champions League 2025/26?","Bayern München","Real Madrid","Barcelona","Chelsea"],
+["Champions League","Hvem tabte Champions League-finalen 2025?","Inter","Arsenal","Barcelona","Borussia Dortmund"],
+["VM","Hvilket land fik bronze ved VM 2026?","England","Frankrig","Portugal","Brasilien"],
+["Superligaen","Hvilken storklub endte i kvalifikationsspillet (bunden) i Superligaen 2025/26?","FC København","Brøndby","FC Midtjylland","AGF"],
+["La Liga","Hvem var Real Madrids træner i starten af sæsonen 2025/26?","Xabi Alonso","Carlo Ancelotti","Zinedine Zidane","José Mourinho"],
+["VM","Hvem slog Danmark ud af VM 1998 i kvartfinalen?","Brasilien","Frankrig","Nigeria","Holland"],
+["EM","Hvem slog Danmark ud i semifinalen ved EM 2021?","England","Italien","Spanien","Tjekkiet"],
+["VM","Hvem scorede det berømte »Guds hånd«-mål ved VM 1986?","Diego Maradona","Pelé","Lionel Messi","Zico"],
+["Premier League","Hvilken klub har vundet flest Premier League-titler?","Manchester United","Manchester City","Liverpool","Chelsea"],
+["VM","Hvem var Spaniens landstræner ved VM 2026?","Luis de la Fuente","Luis Enrique","Vicente del Bosque","Xavi"],
+["VM","Hvor mange VM-titler har Spanien efter 2026?","2","1","3","4"],
+["VM","Hvem vandt VM 1986?","Argentina","Vesttyskland","Frankrig","Brasilien"],
+["VM","Hvem blev topscorer ved VM 2022?","Kylian Mbappé","Lionel Messi","Olivier Giroud","Julián Álvarez"],
+["Bundesliga","Bayerns mesterskab i 2026 var klubbens mesterskab nummer...","35","30","33","38"],
+["Danmark","Hvilken dansk målmand vandt EM 1992 og Champions League med Manchester United i 1999?","Peter Schmeichel","Kasper Schmeichel","Thomas Sørensen","Lars Høgh"],
+["Premier League","Hvem var Manchester Uniteds træner i 26 år frem til 2013?","Sir Alex Ferguson","Arsène Wenger","José Mourinho","David Moyes"],
+["Premier League","Hvem var Arsenals træner fra 1996 til 2018?","Arsène Wenger","Mikel Arteta","Unai Emery","George Graham"],
+["Premier League","Hvilken klub vandt overraskende Premier League i 2015/16?","Leicester City","Tottenham","West Ham","Southampton"],
+["Champions League","Hvilken klub vandt Champions League i 2019?","Liverpool","Tottenham","Barcelona","Ajax"],
+["Champions League","Hvilken klub vandt Champions League i 2021?","Chelsea","Manchester City","PSG","Real Madrid"],
+["Champions League","Hvilken klub vandt Champions League i 2022?","Real Madrid","Liverpool","Manchester City","Villarreal"],
+["Champions League","Hvilken klub vandt Champions League i 2020?","Bayern München","PSG","Lyon","RB Leipzig"],
+["Serie A","Hvilken klub vandt Serie A i 2024/25?","Napoli","Inter","Juventus","Atalanta"],
+["Ballon d'Or","Hvem vandt Ballon d'Or i 2023?","Lionel Messi","Erling Haaland","Kylian Mbappé","Kevin De Bruyne"],
+["Ballon d'Or","Hvem vandt Ballon d'Or i 2022?","Karim Benzema","Sadio Mané","Kevin De Bruyne","Robert Lewandowski"],
+["Bundesliga","Hvilken klub har Thomas Müller spillet hele sin europæiske karriere for?","Bayern München","Borussia Dortmund","Schalke 04","VfB Stuttgart"],
+["Bundesliga","Hvilken klub har kælenavnet Die Schwarzgelben (de sort-gule)?","Borussia Dortmund","Bayern München","Werder Bremen","Hamburger SV"],
+["EM","Hvilket land vandt både EM 2008 og EM 2012?","Spanien","Tyskland","Italien","Portugal"],
+["VM","Hvilket land var vært for VM 2018?","Rusland","Qatar","Tyskland","Brasilien"],
+["VM","Hvor skal VM 2030 primært spilles?","Spanien, Portugal og Marokko","USA og Canada","England og Irland","Saudi-Arabien"],
+["Champions League","Hvem var Real Madrids træner, da de vandt Champions League i 2022 og 2024?","Carlo Ancelotti","Zinedine Zidane","Xabi Alonso","José Mourinho"],
+["Champions League","Hvem var Barcelonas træner, da de vandt Champions League i 2009 og 2011?","Pep Guardiola","Frank Rijkaard","Luis Enrique","Tito Vilanova"],
+["Transfers","Hvilken klub købte Neymar fra Barcelona for et verdensrekordbeløb i 2017?","PSG","Real Madrid","Manchester United","Chelsea"],
+["Premier League","Hvem var Liverpools træner fra 2015 til 2024?","Jürgen Klopp","Brendan Rodgers","Arne Slot","Rafael Benítez"],
+["Premier League","Hvilken klub vandt Premier League i 2019/20, klubbens første titel i 30 år?","Liverpool","Manchester City","Leicester City","Chelsea"],
+["Danmark","Hvilken dansk spiller vandt Champions League med Chelsea i 2021?","Andreas Christensen","Christian Eriksen","Kasper Dolberg","Thomas Delaney"],
+["Serie A","Hvilken italiensk klub vandt Christian Eriksen Serie A med i 2021?","Inter","Juventus","AC Milan","Napoli"],
+["VM","Hvilket land vandt VM 1994 efter straffespark mod Italien?","Brasilien","Tyskland","Argentina","Sverige"],
+["Champions League","Hvilken klub vandt Champions League i 2005 efter at have været bagud 0-3 i pausen?","Liverpool","AC Milan","Chelsea","Barcelona"],
+{"m":1,"c":"Premier League","q":"Hvilke tre af disse spillere spillede for Manchester City i 2022/23-sæsonen?","r":["Erling Haaland", "Kevin De Bruyne", "Rodri"],"w":"Raheem Sterling"},
+{"m":1,"c":"Ballon d'Or","q":"Hvilke tre af disse spillere har vundet Ballon d'Or?","r":["Lionel Messi", "Luka Modrić", "Karim Benzema"],"w":"Erling Haaland"},
+{"m":1,"c":"La Liga","q":"Hvilke tre af disse har været træner for Barcelona?","r":["Pep Guardiola", "Xavi", "Hansi Flick"],"w":"Carlo Ancelotti"},
+{"m":1,"c":"La Liga","q":"Hvilke tre af disse har været træner for Real Madrid?","r":["Carlo Ancelotti", "Zinedine Zidane", "Xabi Alonso"],"w":"Pep Guardiola"},
+{"m":1,"c":"Premier League","q":"Hvilke tre af disse klubber har vundet Premier League?","r":["Leicester City", "Blackburn Rovers", "Chelsea"],"w":"Tottenham"},
+{"m":1,"c":"EM","q":"Hvilke tre af disse lande har vundet EM?","r":["Danmark", "Grækenland", "Portugal"],"w":"Belgien"},
+{"m":1,"c":"EM","q":"Hvilke tre af disse spillere var med på Spaniens hold ved EM 2024?","r":["Rodri", "Lamine Yamal", "Nico Williams"],"w":"Sergio Ramos"},
+{"m":1,"c":"Danmark","q":"Hvilke tre af disse danske spillere har spillet for Barcelona?","r":["Michael Laudrup", "Andreas Christensen", "Martin Braithwaite"],"w":"Christian Eriksen"},
+["Sjov", "Hvilken spiller fejrer sine mål ved at sætte sig i meditationsstilling?", "Erling Haaland", "Kylian Mbappé", "Harry Kane", "Mohamed Salah"],
+["Sjov", "Hvilket lands fans blev verdenskendte for »viking-klappet« ved EM 2016?", "Island", "Norge", "Danmark", "Sverige"],
+["Sjov", "Hvilken spiller bed Giorgio Chiellini i skulderen ved VM 2014?", "Luis Suárez", "Neymar", "Pepe", "Diego Costa"],
+["Sjov", "Hvilket dyr spåede rigtigt resultat i alle Tysklands kampe ved VM 2010?", "En blæksprutte", "En papegøje", "En gris", "En ged"],
+["Sjov", "Hvilket landshold kaldes Die Mannschaft?", "Tyskland", "Østrig", "Schweiz", "Holland"],
+["Sjov", "Hvilken spiller havde kælenavnet El Niño (Drengen)?", "Fernando Torres", "Raúl", "David Villa", "Iker Casillas"],
+["Sjov", "Hvad blev Peter Schmeichel kaldt i England?", "The Great Dane", "The Viking", "The Wall", "Big Pete"],
+["Ballon d'Or", "Hvem vandt Ballon d'Or i 2026?", "Harry Kane", "Kylian Mbappé", "Lamine Yamal", "Rodri"],
+["VM", "Hvem blev topscorer ved VM 2026?", "Kylian Mbappé", "Lionel Messi", "Harry Kane", "Erling Haaland"],
+["VM", "Hvilken VM-debutant overraskede ved VM 2026 med 0-0 mod Spanien og 2-2 mod Uruguay?", "Kap Verde", "Curaçao", "Haiti", "Jordan"],
+["VM", "Hvilken tidligere verdensmester røg ud allerede i gruppespillet ved VM 2026?", "Uruguay", "Argentina", "Frankrig", "England"],
+{"m": 1, "c": "Ballon d'Or", "q": "Hvilke tre af disse var i top 5 ved Ballon d'Or 2025?", "r": ["Vitinha", "Mohamed Salah", "Raphinha"], "w": "Kylian Mbappé"}
+],
+3:[
+["EM","Hvem scorede Danmarks 1-0 i EM-finalen 1992?","John »Faxe« Jensen","Kim Vilfort","Brian Laudrup","Flemming Povlsen"],
+["EM","I hvilken by blev EM-finalen 1992 spillet?","Göteborg","Stockholm","Malmö","København"],
+["EM","Danmark kom med til EM 1992 i stedet for hvilket land?","Jugoslavien","Sovjetunionen","Tjekkoslovakiet","Østrig"],
+["VM","Hvilken italiener skallede Zidane i VM-finalen 2006?","Marco Materazzi","Fabio Cannavaro","Gennaro Gattuso","Andrea Pirlo"],
+["VM","I hvilket minut scorede Ferran Torres i VM-finalen 2026?","106.","90+3.","78.","118."],
+["Premier League","Hvilke to spillere delte assistrekorden i Premier League, før Bruno Fernandes slog den?","Thierry Henry og Kevin De Bruyne","Ryan Giggs og Frank Lampard","Cesc Fàbregas og Mesut Özil","Mohamed Salah og Trent Alexander-Arnold"],
+["Champions League","Hvor tidligt scorede Kai Havertz i Champions League-finalen 2026?","I 6. minut","I 1. minut","I 23. minut","I 45. minut"],
+["Superligaen","Hvor mange Superliga-titler har FC København vundet (pr. 2026)?","16","12","14","18"],
+["Superligaen","Hvem vandt den allerførste Superliga i 1991?","Brøndby","FC København","AGF","Lyngby"],
+["Superligaen","Hvem blev dansk mester i 1992?","Lyngby","Brøndby","FC København","Silkeborg"],
+["Premier League","Hvor mange engelske mesterskaber har Arsenal vundet efter titlen i 2026?","14","13","20","10"],
+["VM","Hvilket land vandt det allerførste VM i 1930?","Uruguay","Argentina","Brasilien","Italien"],
+["VM","Hvor gammel var Lionel Messi ved VM-finalen 2026?","39","35","37","41"],
+["Champions League","Hvem stod i mål for PSG i Champions League-finalen 2026?","Matvei Safonov","Gianluigi Donnarumma","Keylor Navas","Lucas Chevalier"],
+["VM","På hvilket stadion blev VM-finalen 2026 spillet?","MetLife Stadium","Rose Bowl","SoFi Stadium","Estadio Azteca"],
+["Champions League","Hvem slog Arsenal i Champions League-finalen 2006?","Barcelona","AC Milan","Liverpool","Real Madrid"],
+["VM","Hvilket land slog Danmark 6-1 ved VM 1986?","Uruguay","Skotland","Vesttyskland","Spanien"],
+["Champions League","Hvem slog Real Madrid ud af Champions League 2025/26 i kvartfinalen?","Bayern München","PSG","Arsenal","Manchester City"],
+["Champions League","Hvem slog Barcelona ud af Champions League 2025/26?","Atlético Madrid","Inter","PSG","Bayern München"],
+["Premier League","Hvor mange engelske mesterskaber har Liverpool (pr. 2026)?","20","19","18","22"],
+["La Liga","Hvilken andendivisionsklub slog Real Madrid ud af Copa del Rey i 2025/26?","Albacete","Real Zaragoza","Sporting Gijón","Racing Santander"],
+["La Liga","Titlen i 2026 var Barcelonas La Liga-titel nummer...","29","27","31","25"],
+["Bundesliga","Hvem var træner, da Leverkusen vandt Bundesligaen ubesejret i 2024?","Xabi Alonso","Gerardo Seoane","Thomas Tuchel","Julian Nagelsmann"],
+["La Liga","Hvem har scoret flest mål i La Ligas historie?","Lionel Messi","Cristiano Ronaldo","Telmo Zarra","Hugo Sánchez"],
+["VM","Hvilket land vandt VM 2002?","Brasilien","Tyskland","Tyrkiet","Sydkorea"],
+["VM","Hvilket land vandt VM 1966?","England","Vesttyskland","Portugal","Brasilien"],
+["EM","Hvilket land vandt EM 2020, der blev spillet i 2021?","Italien","England","Spanien","Danmark"],
+["EM","Hvilket land vandt EM 2016?","Portugal","Frankrig","Wales","Tyskland"],
+["Premier League","Hvem satte rekord med 36 mål i én Premier League-sæson i 2022/23?","Erling Haaland","Mohamed Salah","Harry Kane","Alan Shearer"],
+["Champions League","Hvilken klub vandt Champions League i 2023?","Manchester City","Inter","Real Madrid","Bayern München"],
+["Ballon d'Or","Hvem vandt Ballon d'Or i 2024?","Rodri","Vinícius Júnior","Jude Bellingham","Harry Kane"],
+["Champions League","Hvem tabte Champions League-finalen 2024 til Real Madrid?","Borussia Dortmund","Inter","Manchester City","Bayern München"],
+["Serie A","Hvilken klub vandt i 2023 Serie A for første gang i 33 år?","Napoli","Lazio","Roma","Atalanta"],
+["Champions League","Hvem scorede det eneste mål i Champions League-finalen 2022?","Vinícius Júnior","Karim Benzema","Mohamed Salah","Luka Modrić"],
+["Champions League","I hvilken by blev Champions League-finalen 2024 spillet?","London","Paris","München","Istanbul"],
+["Danmark","Hvem deler rekorden for flest landskampsmål for Danmark med Poul »Tist« Nielsen?","Jon Dahl Tomasson","Nicklas Bendtner","Preben Elkjær","Christian Eriksen"],
+["Europa League","Hvilken klub vandt Europa League i 2024?","Atalanta","Bayer Leverkusen","Roma","Liverpool"],
+["Europa League","Hvilken klub vandt Europa League i 2023?","Sevilla","Roma","Juventus","Manchester United"],
+["Europa League","Hvilken klub har vundet Europa League flest gange?","Sevilla","Liverpool","Atlético Madrid","Inter"],
+["Bundesliga","Hvem vandt Bundesligaen i 2011/12, før Bayern vandt 11 i træk?","Borussia Dortmund","Bayern München","VfL Wolfsburg","Schalke 04"],
+["Danmark","Hvem var Danmarks landstræner ved VM 2018?","Åge Hareide","Morten Olsen","Kasper Hjulmand","Ståle Solbakken"],
+["Danmark","Hvem var Danmarks anfører ved EM 2021?","Simon Kjær","Christian Eriksen","Kasper Schmeichel","Pierre-Emile Højbjerg"],
+["Danmark","Hvem scorede Danmarks frisparksmål mod England i EM-semifinalen 2021?","Mikkel Damsgaard","Christian Eriksen","Kasper Dolberg","Joakim Mæhle"],
+["VM","Hvilket land vandt VM 1990?","Vesttyskland","Argentina","Italien","England"],
+["Premier League","Hvilken træner har vundet flest Premier League-titler?","Sir Alex Ferguson","Pep Guardiola","Arsène Wenger","José Mourinho"],
+["Serie A","Hvilken klub kaldes La Vecchia Signora (Den gamle dame)?","Juventus","AC Milan","Inter","Roma"],
+["Danmark","Hvem var Danmarks landstræner ved EM 1984 og VM 1986?","Sepp Piontek","Richard Møller Nielsen","Bo Johansson","Morten Olsen"],
+["Superligaen","Hvornår vandt Brøndby senest Superligaen?","2021","2005","2016","2023"],
+["Superligaen","Hvilken klub vandt Superligaen for første gang i 2015?","FC Midtjylland","FC Nordsjælland","AGF","Randers"],
+["Superligaen","I hvilket år blev Superligaen grundlagt?","1991","1985","1995","2001"],
+["VM","Hvem vandt Guldbolden som turneringens bedste spiller ved VM 2022?","Lionel Messi","Kylian Mbappé","Luka Modrić","Emiliano Martínez"],
+["EM","Hvem blev kåret som bedste unge spiller ved EM 2024?","Lamine Yamal","Jude Bellingham","Jamal Musiala","Nico Williams"],
+["EM","Hvem blev den yngste målscorer i EM's historie i 2024?","Lamine Yamal","Jamal Musiala","Kobbie Mainoo","Arda Güler"],
+["Champions League","Hvem tabte Champions League-finalen 2019?","Tottenham","Ajax","Barcelona","Liverpool"],
+["Champions League","Hvilken klub vandt Champions League i 1999 med to mål i overtiden?","Manchester United","Bayern München","Juventus","Barcelona"],
+["Premier League","Hvem var Chelseas træner, da de vandt Premier League i 2005?","José Mourinho","Claudio Ranieri","Carlo Ancelotti","Guus Hiddink"],
+["VM","Hvem blev topscorer ved VM 2018?","Harry Kane","Kylian Mbappé","Cristiano Ronaldo","Romelu Lukaku"],
+["VM","Hvilket land er vært for VM 2034?","Saudi-Arabien","Australien","Kina","Qatar"],
+{"m":1,"c":"La Liga","q":"Hvilke tre af disse har spillet for både Real Madrid og Barcelona?","r":["Luís Figo", "Ronaldo (brasilianeren)", "Michael Laudrup"],"w":"Zinedine Zidane"},
+{"m":1,"c":"Champions League","q":"Hvilke tre af disse startede for Liverpool i Champions League-finalen 2019?","r":["Virgil van Dijk", "Mohamed Salah", "Alisson"],"w":"Philippe Coutinho"},
+{"m":1,"c":"VM","q":"Hvilke tre af disse har vundet Guldstøvlen som topscorer ved et VM?","r":["Harry Kane", "Kylian Mbappé", "Miroslav Klose"],"w":"Lionel Messi"},
+{"m":1,"c":"Champions League","q":"Hvilke tre af disse trænere har vundet Champions League med to forskellige klubber?","r":["Carlo Ancelotti", "José Mourinho", "Luis Enrique"],"w":"Jürgen Klopp"},
+{"m":1,"c":"Spillere","q":"Hvilke tre af disse klubber har Zlatan Ibrahimović spillet for?","r":["Juventus", "Barcelona", "Manchester United"],"w":"Real Madrid"},
+{"m":1,"c":"Spillere","q":"Hvilke tre af disse klubber har Cristiano Ronaldo spillet for?","r":["Sporting Lissabon", "Juventus", "Manchester United"],"w":"Chelsea"},
+{"m":1,"c":"EM","q":"Hvilke tre af disse spillere var med i Danmarks trup ved EM 1992?","r":["Peter Schmeichel", "Brian Laudrup", "Kim Vilfort"],"w":"Michael Laudrup"},
+{"m":1,"c":"Bundesliga","q":"Hvilke tre af disse klubber har vundet Bundesligaen?","r":["Bayern München", "Borussia Dortmund", "VfL Wolfsburg"],"w":"Schalke 04"},
+["Sjov", "Erling Haalands far, Alf-Inge Haaland, har spillet for hvilken af disse klubber?", "Manchester City", "Liverpool", "Arsenal", "Chelsea"],
+["Sjov", "Hvilket land kom Antonín Panenka fra, manden bag det berømte chip-straffespark?", "Tjekkoslovakiet", "Ungarn", "Polen", "Jugoslavien"],
+["Sjov", "Hvilken engelsk klub har kælenavnet The Toffees?", "Everton", "Fulham", "Burnley", "Wolverhampton"],
+["Sjov", "Hvilken klub har kælenavnet The Magpies (Skaderne)?", "Newcastle", "Sunderland", "West Bromwich", "Southampton"],
+["Ballon d'Or", "Hvem blev nr. 2 ved Ballon d'Or 2026?", "Kylian Mbappé", "Lamine Yamal", "Rodri", "Lionel Messi"],
+["Ballon d'Or", "Hvem blev nr. 3 ved Ballon d'Or 2025?", "Vitinha", "Mohamed Salah", "Raphinha", "Kylian Mbappé"],
+["VM", "Hvem blev kåret som turneringens bedste spiller (Guldbolden) ved VM 2026?", "Rodri", "Lamine Yamal", "Kylian Mbappé", "Lionel Messi"],
+["VM", "Kap Verde scorede sit første VM-mål nogensinde på frispark. Mod hvilket land?", "Uruguay", "Spanien", "Saudi-Arabien", "Marokko"],
+["VM", "Hvad er Kap Verdes landsholds kælenavn?", "De Blå Hajer", "De Grønne Ørne", "Løverne", "Elefanterne"],
+["VM", "Hvilket land slog Tyskland 2-1 i gruppespillet ved VM 2026?", "Ecuador", "Curaçao", "Elfenbenskysten", "Japan"],
+["VM", "Hvilket værtsland vandt alle tre gruppekampe ved VM 2026?", "Mexico", "USA", "Canada", "Ingen af dem"],
+{"m": 1, "c": "Ballon d'Or", "q": "Hvilke tre af disse var i top 5 ved Ballon d'Or 2026?", "r": ["Kylian Mbappé", "Rodri", "Lionel Messi"], "w": "Ousmane Dembélé"},
+{"m": 1, "c": "Ballon d'Or", "q": "Hvilke tre af disse var i top 3 ved Ballon d'Or 2023?", "r": ["Lionel Messi", "Erling Haaland", "Kylian Mbappé"], "w": "Cristiano Ronaldo"}
+],
+4:[
+["Champions League","Hvor mange gange har Real Madrid vundet Champions League/Europa Cuppen (pr. 2026)?","15","13","14","16"],
+["Champions League","Hvem har scoret flest mål i Champions Leagues historie?","Cristiano Ronaldo","Lionel Messi","Robert Lewandowski","Karim Benzema"],
+["Champions League","Hvilken træner har vundet Champions League flest gange?","Carlo Ancelotti","Pep Guardiola","Zinedine Zidane","Luis Enrique"],
+["Champions League","Hvor mange Europa Cup- og Champions League-finaler er endt med straffespark (inkl. 2026)?","12","8","10","15"],
+["Champions League","Hvem scorede sejrsmålet, da Manchester City vandt Champions League-finalen 2023?","Rodri","Erling Haaland","Kevin De Bruyne","Phil Foden"],
+["Bundesliga","Hvem har rekorden med 41 mål i én Bundesliga-sæson?","Robert Lewandowski","Gerd Müller","Harry Kane","Erling Haaland"],
+["Bundesliga","Hvem har scoret flest mål i Bundesligaens historie?","Gerd Müller","Robert Lewandowski","Klaus Fischer","Jupp Heynckes"],
+["Bundesliga","Hvem blev Leverkusens nye træner i sommeren 2025?","Erik ten Hag","Edin Terzić","Xavi","Roger Schmidt"],
+["La Liga","Hvor mange La Liga-titler har Real Madrid vundet (pr. 2026)?","36","33","35","38"],
+["La Liga","Hvem vandt Copa del Rey i 2026?","Real Sociedad","Atlético Madrid","Barcelona","Athletic Bilbao"],
+["La Liga","I hvilken måned fyrede Real Madrid Xabi Alonso?","Januar 2026","Oktober 2025","Marts 2026","Maj 2026"],
+["VM","Hvornår var Danmark med ved en VM-slutrunde for første gang?","1986","1982","1990","1998"],
+["EM","Hvilket land vandt overraskende EM 2004?","Grækenland","Portugal","Tjekkiet","Holland"],
+["VM","I hvilken by blev VM-finalen 2014 spillet?","Rio de Janeiro","São Paulo","Brasília","Salvador"],
+["Premier League","Hvem har scoret flest mål i Premier Leagues historie?","Alan Shearer","Harry Kane","Wayne Rooney","Thierry Henry"],
+["Europa League","Hvem vandt Europa League i 2025?","Tottenham","Manchester United","Athletic Bilbao","Roma"],
+["Conference League","Hvem vandt Conference League i 2024?","Olympiacos","Fiorentina","West Ham","Roma"],
+["VM","Hvor mange VM-titler vandt Pelé?","3","2","4","1"],
+["EM","Hvem slog Danmark ud af EM 2024?","Tyskland","Spanien","England","Schweiz"],
+["EM","Hvem var Danmarks landstræner ved EM 2024?","Kasper Hjulmand","Åge Hareide","Morten Olsen","Brian Riemer"],
+["Champions League","Hvem scorede Real Madrids første mål i Champions League-finalen 2024?","Dani Carvajal","Vinícius Júnior","Jude Bellingham","Toni Kroos"],
+["VM","Hvilken italiensk stjerne brændte det afgørende straffespark i VM-finalen 1994?","Roberto Baggio","Paolo Maldini","Alessandro Del Piero","Gianfranco Zola"],
+["Superligaen","Hvornår vandt AaB senest det danske mesterskab?","2014","2008","1999","2019"],
+["EM","Hvem blev kåret som turneringens bedste spiller ved EM 2024?","Rodri","Lamine Yamal","Dani Olmo","Jude Bellingham"],
+["Champions League","Hvilken klub vandt den allerførste Champions League-sæson i 1992/93?","Marseille","AC Milan","Barcelona","Ajax"],
+["Danmark","Hvilken dansker vandt Ballon d'Or i 1977?","Allan Simonsen","Michael Laudrup","Preben Elkjær","Morten Olsen"],
+["Danmark","Hvilken klub spillede Allan Simonsen for, da han vandt Ballon d'Or?","Borussia Mönchengladbach","Barcelona","Bayern München","Ajax"],
+["Bundesliga","Hvem scorede fem mål på ni minutter for Bayern mod Wolfsburg i 2015?","Robert Lewandowski","Thomas Müller","Arjen Robben","Mario Götze"],
+["VM","Hvor mange mål scorede franske Just Fontaine ved VM 1958 (stadig rekord)?","13","10","11","15"],
+["Superligaen","Hvilken dansk klub nåede Champions Leagues ottendedelsfinaler i 2010/11?","FC København","FC Midtjylland","Brøndby","OB"],
+["Superligaen","Hvilken norsk træner vandt flere mesterskaber med FC København fra 2006 til 2011?","Ståle Solbakken","Åge Hareide","Kjetil Rekdal","Ronny Deila"],
+["Danmark","Hvilket hold slog Danmark 5-1 i ottendedelsfinalen ved VM 1986?","Spanien","Vesttyskland","Uruguay","Argentina"],
+["Champions League","Hvilken klub tabte Champions League-finalen 2005 efter at have ført 3-0?","AC Milan","Juventus","Inter","Bayern München"],
+["Premier League","Hvem scorede det afgørende mål i overtiden, da Manchester City vandt Premier League i 2012?","Sergio Agüero","Edin Džeko","Yaya Touré","David Silva"],
+["VM","Hvilket land vandt VM 1950, hvor Brasilien tabte den afgørende kamp på Maracanã?","Uruguay","Italien","Sverige","Argentina"],
+{"m":1,"c":"VM","q":"Hvilke tre af disse har vundet VM både som spiller og som træner?","r":["Mário Zagallo", "Franz Beckenbauer", "Didier Deschamps"],"w":"Zinedine Zidane"},
+{"m":1,"c":"Champions League","q":"Hvilke tre af disse engelske klubber har vundet Europa Cuppen eller Champions League?","r":["Nottingham Forest", "Aston Villa", "Chelsea"],"w":"Arsenal"},
+{"m":1,"c":"VM","q":"Hvilke tre af disse startede for Argentina i VM-finalen 2022?","r":["Lionel Messi", "Ángel Di María", "Enzo Fernández"],"w":"Paulo Dybala"},
+{"m":1,"c":"Superligaen","q":"Hvilke tre af disse danske klubber har spillet i Champions Leagues gruppespil?","r":["FC København", "FC Midtjylland", "AaB"],"w":"AGF"},
+{"m":1,"c":"Ballon d'Or","q":"Hvilke tre af disse vandt Ballon d'Or, mens de spillede i Premier League?","r":["Rodri", "Cristiano Ronaldo", "Michael Owen"],"w":"Thierry Henry"},
+{"m":1,"c":"VM","q":"Hvilke tre af disse har scoret i en VM-finale?","r":["Zinedine Zidane", "Lionel Messi", "Kylian Mbappé"],"w":"Neymar"},
+["Sjov", "Hvilken colombiansk målmand blev verdenskendt for sit »skorpionspark« på Wembley i 1995?", "René Higuita", "Óscar Córdoba", "David Ospina", "Faryd Mondragón"],
+["Sjov", "Hvilken spiller tog bolden med hånden før det afgørende mål mod Irland i 2009?", "Thierry Henry", "Nicolas Anelka", "Patrice Evra", "William Gallas"],
+["Sjov", "Hvilken brasiliansk målmand scorede over 100 mål, mest på frispark og straffe?", "Rogério Ceni", "Dida", "Júlio César", "Alisson"],
+["Sjov", "Hvad hed løven, der var maskot ved VM 1966?", "World Cup Willie", "Footix", "Pique", "Zakumi"],
+["Ballon d'Or", "I hvilken by blev Ballon d'Or 2026 uddelt?", "London", "Paris", "Madrid", "München"],
+["Ballon d'Or", "Hvem vandt kvindernes Ballon d'Or i 2026?", "Alexia Putellas", "Aitana Bonmatí", "Mariona Caldentey", "Alessia Russo"],
+["VM", "Hvor mange VM-mål har Kylian Mbappé scoret i alt efter VM 2026 (ny rekord)?", "22", "16", "19", "25"],
+["VM", "Hvem var Uruguays træner ved VM 2026?", "Marcelo Bielsa", "Óscar Tabárez", "Diego Simeone", "Marcelo Gallardo"],
+["VM", "Hvilket land nåede knockoutfasen for første gang nogensinde ved VM 2026 efter 1-0 over Sydkorea?", "Sydafrika", "Kap Verde", "Jordan", "Usbekistan"],
+["VM", "Hvilket land slog Tyrkiet 2-0 i gruppespillet ved VM 2026?", "Australien", "USA", "Paraguay", "Japan"],
+{"m": 1, "c": "VM", "q": "Hvilke tre lande var i gruppe med Kap Verde ved VM 2026?", "r": ["Spanien", "Uruguay", "Saudi-Arabien"], "w": "Marokko"}
+]};
+
+const ROLES=[{n:'GK',x:4,y:31.5,gk:1},{n:'CBL',x:17,y:22},{n:'CBR',x:17,y:41},{n:'CML',x:33,y:23},{n:'CMR',x:33,y:40},{n:'LW',x:49,y:8},{n:'RW',x:49,y:55},{n:'ST',x:55,y:31.5}];
+const POS={GK:'Målmand',CBL:'Forsvar',CBR:'Forsvar',CML:'Midtbane',CMR:'Midtbane',LW:'Venstre kant',RW:'Højre kant',ST:'Angriber'};
+const SHOTMOD={GK:2,CBL:1,CBR:1,CML:0,CMR:0,LW:0,RW:0,ST:-1};
+const px=x=>40+x*9.2, py=y=>30+y*9.2;
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+let S={};let pools={};let timerInt=null;
+
+const isM=q=>!Array.isArray(q);
+const qKey=q=>isM(q)?q.q:q[1];
+function prepQ(q){const m=isM(q);const opts=m?shuffle([...q.r,q.w]):shuffle([q[2],q[3],q[4],q[5]]);S.q={q,opts,m,right:new Set(m?q.r:[q[2]])}}
+function qCat(){return isM(S.q.q)?S.q.q.c:S.q.q[0]}
+function qHtml(){const q=S.q.q;return `<div class="qtext">${isM(q)?q.q:q[1]}${S.q.m?' <span class="pill" style="background:#a78bfa;vertical-align:middle">Vælg 3</span>':''}</div><div class="opts">${S.q.opts.map((o,k)=>`<button class="opt" data-k="${k}"><span class="k">${'ABCD'[k]}</span>${o}</button>`).join('')}</div>${S.q.m?'<div style="margin-top:10px;display:flex;gap:12px;align-items:center"><button class="btn" id="msub">Svar</button><span id="merr" style="color:var(--l4);font-size:13px"></span></div>':''}`}
+function bindQ(cb){
+  const btns=[...document.querySelectorAll('.opt')];
+  const finish=sel=>{
+    btns.forEach((b,i)=>{b.disabled=true;b.classList.remove('sel');const o=S.q.opts[i];if(S.q.right.has(o))b.classList.add('right');else if(sel.has(o))b.classList.add('wrong')});
+    const ms=$('msub');if(ms)ms.parentNode.remove();
+    const ok=S.q.m?(sel.size===3&&[...sel].every(x=>S.q.right.has(x))):S.q.right.has([...sel][0]);
+    if(ok)S.correct=(S.correct||0)+1;
+    cb(ok);
+  };
+  if(!S.q.m){btns.forEach((b,i)=>b.onclick=()=>finish(new Set([S.q.opts[i]])));return}
+  btns.forEach(b=>b.onclick=()=>{b.classList.toggle('sel');$('merr').textContent=''});
+  $('msub').onclick=()=>{const sel=new Set(btns.filter(b=>b.classList.contains('sel')).map(b=>S.q.opts[+b.dataset.k]));if(sel.size!==3){$('merr').textContent='Vælg præcis 3 svar';return}finish(sel)};
+}
+let SEEN=new Set();try{SEEN=new Set(JSON.parse(localStorage.getItem('tf_seen')||'[]'))}catch(e){}
+let DBDOC=null,dbSaving=false,dbDirty=false;
+function flushDb(){
+  if(!DBDOC||dbSaving||!dbDirty)return;
+  dbSaving=true;dbDirty=false;
+  DBDOC.set({questions:[...SEEN],updated:new Date().toISOString()}).catch(()=>{}).finally(()=>{dbSaving=false;flushDb()});
+}
+function saveSeen(){try{localStorage.setItem('tf_seen',JSON.stringify([...SEEN]))}catch(e){}dbDirty=true;flushDb()}
+(async()=>{try{
+  if(!window.claude||!window.claude.use)return;
+  const db=await window.claude.use('db');if(!db)return;
+  const ref=db.doc('progress/seen');const snap=await ref.get();
+  const before=SEEN.size;let remote=0;
+  if(snap.exists){const d=snap.data()||{};(Array.isArray(d.questions)?d.questions:[]).forEach(q=>{if(typeof q==='string'){remote++;SEEN.add(q)}})}
+  DBDOC=ref;
+  if(SEEN.size>remote)saveSeen();else{try{localStorage.setItem('tf_seen',JSON.stringify([...SEEN]))}catch(e){}}
+  if(typeof seenInfo==='function'&&$('seeninfo'))seenInfo();
+}catch(e){}})();
+function pick(level){
+  let avail=BANK[level].filter(q=>!SEEN.has(qKey(q)));
+  if(!avail.length){BANK[level].forEach(q=>SEEN.delete(qKey(q)));avail=BANK[level].slice();}
+  const q=avail[Math.floor(Math.random()*avail.length)];
+  SEEN.add(qKey(q));saveSeen();return q;
+}
+
+function initPlayers(){
+  S.players=[];
+  for(let t=0;t<2;t++)ROLES.forEach(r=>{
+    const k=ROLES.indexOf(r);const pl=S.clubs[t].pl[k];
+    S.players.push({team:t,n:r.n,num:pl[0],name:pl[1],rating:pl[2],gk:!!r.gk,bx:t?100-r.x:r.x,by:t?63-r.y:r.y,x:0,y:0});
+  });
+}
+const LINE={GK:0,CBL:1,CBR:1,CML:2,CMR:2,LW:3,RW:3,ST:3};
+function separate(){
+  const D=6.2;
+  for(let k=0;k<8;k++)S.players.forEach((p,i)=>S.players.forEach((q,j)=>{
+    if(j<=i)return;if((i===S.holder&&j===S.presser)||(j===S.holder&&i===S.presser))return;let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);
+    if(d>=D)return;if(d<0.01){dx=0;dy=1;d=1}
+    const m=(D-d)/2,ux=dx/d,uy=dy/d*1.6;
+    const fi=i===S.holder||p.gk?0:(j===S.holder||q.gk?2:1),fj=j===S.holder||q.gk?0:(i===S.holder||p.gk?2:1);
+    p.x=clamp(p.x-ux*m*fi,3,97);p.y=clamp(p.y-uy*m*fi,3,60);q.x=clamp(q.x+ux*m*fj,3,97);q.y=clamp(q.y+uy*m*fj,3,60);
+  }));
+}
+const toA=(p,x)=>p.team===0?x:100-x;
+function layout(_x,_y,reset){
+  const old=S.players.map(p=>({x:p.x,y:p.y}));
+  const h=S.players[S.holder];const ht=h.team;
+  if(reset){
+    S.players.forEach((p,i)=>{p.x=p.gk?(p.team?96:4):toA(p,Math.min(toA(p,p.bx),42));p.y=p.by;if(i===S.holder){p.x=toA(p,49.2);p.y=31.5}});
+    return;
+  }
+  if(!h.gk&&S.dribble){const a=clamp(toA(h,h.x)+rnd(2,7),3,88);h.x=toA(h,a);h.y=clamp(h.y+rnd(-3,3),4,59)}
+  S.dribble=false;
+  const hA=toA(h,h.x),hl=LINE[h.n];
+  S.players.forEach((p,i)=>{
+    if(i===S.holder)return;
+    const baseA=toA(p,p.bx);
+    if(p.gk){p.x=p.team?96:4;p.y=31.5+(h.y-31.5)*0.2;return}
+    let a,y;
+    if(p.team===ht){
+      a=baseA+(hA-36)*0.55+5;
+      const pl=LINE[p.n];
+      if(h.gk){a=baseA+rnd(-2,3)}
+      else if(pl===hl){a=hA+rnd(5,13);y=p.by+(h.y-p.by)*(p.n==='LW'||p.n==='RW'?0.05:0.15)+rnd(-3,3)}
+      else if(pl>hl){a=Math.max(a,hA+rnd(12,24));y=p.by+rnd(-6,6)}
+      else{a=Math.max(baseA,hA-(hl-pl)*rnd(11,15))}
+      if(y===undefined)y=p.by+(h.y-p.by)*0.2+rnd(-3,3);
+    } else {
+      const bD=100-hA;
+      a=baseA+(bD-36)*0.45-4;
+      if(LINE[p.n]===1)a=Math.min(a,bD-5);
+      else if(LINE[p.n]===2)a=Math.min(a,bD+3);
+      y=p.by+(h.y-p.by)*0.3+rnd(-2.5,2.5);
+    }
+    p.x=toA(p,clamp(a,4,90));p.y=clamp(y,3,60);
+  });
+  if(!h.gk){
+    let best=-1,bd=1e9;
+    S.players.forEach((p,i)=>{if(p.team===ht||p.gk)return;const d=dist(p,h);if(d<bd){bd=d;best=i}});
+    const pr=S.players[best];
+    const pressP=0.15+0.4*clamp(hA/90,0,1)+(S.bot&&ht===0?S.bot.press:0);
+    S.presser=-1;
+    if(Math.random()<pressP){S.presser=best;const dd=rnd(3.5,5.5);pr.x=toA(pr,clamp(100-hA-dd,3,92));pr.y=clamp(h.y+(h.y<31.5?1:-1)*rnd(2,4),3,60)}
+  }
+  separate();
+  const tr=S.players.map((p,i)=>{
+    if(p.team!==ht||i===S.holder||p.gk)return'';
+    const o=old[i];if(!o||dist(o,p)<7)return'';
+    return `<line x1="${px(o.x)}" y1="${py(o.y)}" x2="${px(p.x)}" y2="${py(p.y)}" stroke="${COL[ht]}" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round" marker-end="url(#arr${ht})"/>`;
+  }).join('');
+  const tg=$('trails');tg.innerHTML=tr;tg.classList.remove('fade');void tg.getBBox();tg.classList.add('fade');
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function segDist(p,a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy;
+  let t=L?((p.x-a.x)*dx+(p.y-a.y)*dy)/L:0;
+  return {d:Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy)),t};
+}
+function blocked(a,b,team,skipGk){
+  return S.players.some(p=>{
+    if(p.team===team)return false;
+    if(skipGk&&p.gk)return false;
+    const r=segDist(p,a,b);return r.t>0.08&&r.t<0.95&&r.d<4.2;
+  });
+}
+const rmod=r=>r===undefined?0:(r>=85?-1:r<58?1:0);
+function adj(l,team,r){return clamp(l+S.off[team]+rmod(r),1,4)}
+function passLevel(a,b){
+  const d=dist(a,b);let l=d<20?1:d<34?2:d<50?3:4;
+  if(blocked(a,b,a.team,false))l++;
+  return adj(Math.min(l,4),a.team,a.rating);
+}
+function shotNeed(a){if(a.gk)return 0;const d=dist(a,goalPt(a.team));return d>=38?0:d>=30?2:1}
+function goalPt(team){return {x:team?-0.8:100.8,y:31.5}}
+function shotLevel(a){
+  if(a.gk||shotNeed(a)>1)return 4;
+  const g=goalPt(a.team);const d=dist(a,g);let l=d<22?2:d<40?3:4;
+  l+=SHOTMOD[a.n];
+  if(blocked(a,g,a.team,true))l++;
+  return adj(clamp(l,2,4),a.team);
+}
+
+function buildPlayers(){
+  const g=$('players');g.innerHTML='';
+  S.players.forEach((p,i)=>{
+    const el=document.createElementNS('http://www.w3.org/2000/svg','g');
+    el.setAttribute('class','pl');el.id='pl'+i;
+    const dark=p.gk?GKC[p.team]:COL[p.team];const tc=p.gk?'#111':TXT[p.team];
+    el.style.transitionDuration=rnd(.65,1.1).toFixed(2)+'s';
+    el.innerHTML=`<circle class="ring" r="27" fill="none" stroke="#facc15" stroke-width="3" opacity="0"/>
+      <ellipse cx="0" cy="20" rx="16" ry="5" fill="rgba(0,0,0,.25)"/>
+      <circle class="body" r="18" fill="${dark}" stroke="#fff" stroke-width="2.5"/>
+      <text y="6" text-anchor="middle" font-family="Oswald,sans-serif" font-size="17" font-weight="700" fill="${tc}">${p.num}</text>
+      <text class="pname" y="38" text-anchor="middle">${p.name}</text>
+      <g class="badge" opacity="0"><rect x="-15" y="-50" width="30" height="22" rx="6"/><text y="-34" text-anchor="middle" font-family="Oswald,sans-serif" font-size="15" font-weight="700" fill="#0a0f0c"></text></g>`;
+    el.addEventListener('click',()=>clickPlayer(i));
+    el.addEventListener('mouseenter',()=>hoverPlayer(i));
+    el.addEventListener('mouseleave',clearPreview);
+    g.appendChild(el);
+  });
+}
+const lvColor=l=>getComputedStyle(document.documentElement).getPropertyValue('--l'+l).trim();
+
+function render(){
+  const ht=S.players[S.holder].team;
+  S.players.forEach((p,i)=>{
+    const el=$('pl'+i);
+    el.style.transform=`translate(${px(p.x)}px,${py(p.y)}px)`;
+    el.querySelector('.ring').setAttribute('opacity',i===S.holder?1:0);
+    const b=el.querySelector('.badge');
+    const can=S.phase==='choose'&&p.team===ht&&i!==S.holder;
+    el.classList.toggle('can',can);
+    if(can){
+      const l=passLevel(S.players[S.holder],p);
+      b.querySelector('rect').setAttribute('fill',lvColor(l));
+      b.querySelector('text').textContent=l;b.setAttribute('opacity',1);
+    } else b.setAttribute('opacity',0);
+  });
+  const h=S.players[S.holder];
+  placeBall(h.x+1.6*(h.team?-1:1),h.y+1.4);
+  $('space').classList.toggle('on',S.phase==='choose');
+  [0,1].forEach(t=>$('goalhot'+t).classList.add('hidden'));
+  if(S.phase==='choose'&&shotNeed(h)>0){
+    const tg=ht===0?1:0;const l=shotLevel(h);
+    const gh=$('goalhot'+tg);gh.classList.remove('hidden');
+    const gx=tg?930:70;
+    const nd=shotNeed(h);const lab=nd>1?`SKUD 4 ×${nd}`:'SKUD '+l,bw=nd>1?92:68;
+    $('gb'+tg).innerHTML=`<rect x="${gx-bw/2}" y="210" width="${bw}" height="26" rx="7" fill="${lvColor(l)}"/><text x="${gx}" y="229" text-anchor="middle" font-family="Oswald,sans-serif" font-size="15" font-weight="700" fill="#0a0f0c">${lab}</text>`;
+    gh.onclick=()=>clickShot();
+    gh.onmouseenter=()=>{preview(h,goalPt(h.team),l,'skud');const nd=shotNeed(h);if(nd>1)setStatus(`Langskud: <b style="color:${lvColor(4)}">to legendariske spørgsmål i træk</b>`)};gh.onmouseleave=clearPreview;
+  }
+  renderBoard();
+}
+function placeBall(x,y,fast){
+  const b=$('ball');b.classList.toggle('fast',!!fast);
+  b.style.transform=`translate(${px(x)}px,${py(y)}px)`;
+}
+function renderBoard(){
+  const ht=S.players[S.holder].team;
+  $('g0').textContent=S.score[0];$('g1').textContent=S.score[1];
+  $('clock').textContent=Math.min(90,S.min)+"'";
+  [0,1].forEach(t=>{const a=t===ht&&S.phase!=='end';$('s'+t).classList.toggle('active',a);$('p'+t).textContent=S.who[t]+(a?' · har bolden':'')});
+}
+function preview(a,b,l,kind){
+  clearPreview();
+  const c=lvColor(l);
+  $('preview').innerHTML=`<line x1="${px(a.x)}" y1="${py(a.y)}" x2="${px(b.x)}" y2="${py(b.y)}" stroke="${c}" stroke-width="4" stroke-dasharray="10 8" stroke-linecap="round"/>`;
+  setStatus(`${kind==='skud'?'Skud på mål':'Aflevering'}: <b style="color:${c}">${LV[l].n}</b> spørgsmål`);
+}
+function clearPreview(){$('preview').innerHTML='';if(S.phase==='choose')setStatus(chooseText())}
+function hoverPlayer(i){
+  if(S.phase!=='choose')return;const h=S.players[S.holder],p=S.players[i];
+  if(i===S.holder){const c=dribbleCand({x:toA(h,toA(h,h.x)+10),y:h.y});if(c)dribblePreview(c);return}
+  if(p.team!==h.team||i===S.holder)return;
+  preview(h,p,passLevel(h,p),'pass');
+}
+function setStatus(h){$('status').innerHTML=h}
+function tc(t){return S.clubs[t].col==='#f5f5f5'?'#e5e7eb':COL[t]}
+function chooseText(){const p=S.players[S.holder],t=p.team;return p.gk?`<b style="color:${tc(t)}">${p.name}</b> (målmand, ${S.who[t]}) har bolden. Målmanden kan ikke skyde, så spil bolden op til en medspiller.`:`<b style="color:${tc(t)}">${p.name}</b> (${POS[p.n].toLowerCase()}, ${S.who[t]}) har bolden. ${shotNeed(p)?'Aflever, drible (klik tæt på ham), lav en stikning, eller skyd.':'Han er for langt fra mål til at skyde, så aflever, drible eller lav en stikning.'}`}
+
+function svgPt(e){const s=$('svg');const pt=s.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const r=pt.matrixTransform(s.getScreenCTM().inverse());return {x:(r.x-40)/9.2,y:(r.y-30)/9.2}}
+function throughCand(pt){
+  const h=S.players[S.holder];if(h.gk)return null;
+  const hA=toA(h,h.x),tA=toA(h,pt.x);
+  if(tA<hA+4||tA>94)return null;
+  pt={x:pt.x,y:clamp(pt.y,2,61)};
+  let best=-1,bd=1e9;
+  S.players.forEach((p,i)=>{if(p.team!==h.team||p.gk||i===S.holder)return;const d=dist(p,pt);if(d<bd&&toA(p,p.x)<tA+4){bd=d;best=i}});
+  if(best<0||bd>20)return null;
+  const d=dist(h,pt);let l=d<20?2:d<34?3:4;
+  if(blocked(h,pt,h.team,true))l++;
+  return {to:best,pt,level:adj(Math.min(l,4),h.team,h.rating)};
+}
+function dribbleCand(pt){
+  const h=S.players[S.holder];
+  const tA=toA(h,pt.x);if(tA>93)return null;
+  pt={x:clamp(pt.x,2,98),y:clamp(pt.y,2,61)};
+  const d=dist(h,pt);if(d<3||d>13)return null;
+  let n=0;S.players.forEach(p=>{if(p.team===h.team)return;const r=segDist(p,h,pt);if(r.d<6.5&&r.t>-0.2&&r.t<1.3)n++});
+  return {type:'dribble',pt,level:adj(Math.min(1+n,4),h.team,h.rating),n};
+}
+function dribblePreview(c){
+  const h=S.players[S.holder],col=lvColor(c.level);
+  $('preview').innerHTML=`<path d="M${px(h.x)} ${py(h.y)} Q ${(px(h.x)+px(c.pt.x))/2+12} ${(py(h.y)+py(c.pt.y))/2-12} ${px(c.pt.x)} ${py(c.pt.y)}" fill="none" stroke="${col}" stroke-width="4" stroke-dasharray="2 8" stroke-linecap="round"/><circle cx="${px(c.pt.x)}" cy="${py(c.pt.y)}" r="10" fill="none" stroke="${col}" stroke-width="3"/>`;
+  setStatus(`Dribling med <b>${h.name}</b> forbi ${c.n} modspiller${c.n===1?'':'e'}: <b style="color:${col}">${LV[c.level].n}</b> spørgsmål`);
+}
+function moveCand(pt){return dribbleCand(pt)||throughCand(pt)}
+function movePreview(c){if(c.type==='dribble')dribblePreview(c);else throughPreview(c)}
+function throughPreview(c){
+  const h=S.players[S.holder],r=S.players[c.to],col=lvColor(c.level);
+  $('preview').innerHTML=`<line x1="${px(h.x)}" y1="${py(h.y)}" x2="${px(c.pt.x)}" y2="${py(c.pt.y)}" stroke="${col}" stroke-width="4" stroke-dasharray="10 8" stroke-linecap="round"/>
+   <line x1="${px(r.x)}" y1="${py(r.y)}" x2="${px(c.pt.x)}" y2="${py(c.pt.y)}" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 6" opacity=".85"/>
+   <circle cx="${px(c.pt.x)}" cy="${py(c.pt.y)}" r="14" fill="none" stroke="${col}" stroke-width="3"/><circle cx="${px(c.pt.x)}" cy="${py(c.pt.y)}" r="4" fill="${col}"/>`;
+  setStatus(`Stikning til <b>${r.name}</b>: <b style="color:${col}">${LV[c.level].n}</b> spørgsmål`);
+}
+$('space').addEventListener('mousemove',e=>{if(S.phase!=='choose')return;const c=moveCand(svgPt(e));if(c)movePreview(c);else{$('preview').innerHTML='';setStatus(chooseText())}});
+$('space').addEventListener('mouseleave',()=>{if(S.phase==='choose')clearPreview()});
+$('space').addEventListener('click',e=>{if(S.phase!=='choose')return;const c=moveCand(svgPt(e));if(!c){setStatus('Klik tæt på boldholderen for at drible, eller fremad i et frit område tæt på en medspiller for at lave en stikning.');return}if(c.type==='dribble')ask({type:'dribble',pt:c.pt,level:c.level});else ask({type:'through',to:c.to,pt:c.pt,level:c.level})});
+function clickPlayer(i){
+  if(S.phase!=='choose')return;const h=S.players[S.holder],p=S.players[i];
+  if(i===S.holder){const c=dribbleCand({x:toA(h,toA(h,h.x)+10),y:h.y});if(c)ask({type:'dribble',pt:c.pt,level:c.level});return}
+  if(p.team!==h.team||i===S.holder)return;
+  ask({type:'pass',to:i,level:passLevel(h,p)});
+}
+function clickShot(){
+  if(S.phase!=='choose')return;
+  const h=S.players[S.holder];if(shotNeed(h)===0)return;
+  setPiece('shot',shotLevel(h),shotNeed(h));
+}
+
+function ask(action){
+  S.phase='question';S.action=action;clearPreview();render();
+  const q=pick(action.level);prepQ(q);
+  const t=S.players[S.holder].team;
+  const hn=S.players[S.holder].name;
+  const what=action.type==='dribble'?`${hn} dribler`:action.type==='shot'?`${hn} skyder på mål`:action.type==='through'?`Stikning fra ${hn} til ${S.players[action.to].name}`:`Aflevering fra ${hn} til ${S.players[action.to].name}`;
+  setStatus(`<b style="color:${tc(t)}">${S.who[t]}</b> svarer for ${S.names[t]}: ${what}`);
+  if(action.type==='through')throughPreview(action);if(action.type==='dribble')dribblePreview(action);
+  $('panel').innerHTML=`<div class="qhead"><span class="pill" style="background:${LV[action.level].c}">${LV[action.level].n}${action.need>1?` · ${action.got+1} af ${action.need}`:''}</span><span class="cat">${qCat()} · ${what}</span></div>
+    ${S.timer?'<div class="timer"><div id="tbar"></div></div>':''}
+    ${qHtml()}
+    <div class="tk" id="tk"></div><div id="resarea"></div>`;
+  bindQ(answer);
+  startTackle();
+  if(S.timer){
+    const T=25000,t0=Date.now();clearInterval(timerInt);
+    timerInt=setInterval(()=>{const f=1-(Date.now()-t0)/T;const tb=$('tbar');if(tb)tb.style.width=Math.max(0,f*100)+'%';if(f<=0){clearInterval(timerInt);answer(false)}},100);
+  }
+  $('panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function answer(ok){
+  if(S.phase!=='question'&&S.phase!=='penq')return;
+  clearInterval(timerInt);const tkEl=$('tk');if(tkEl)tkEl.innerHTML='';
+  const k=0;
+  if(S.phase==='penq')return penResult(ok);
+  const a=S.action;
+  if(ok&&a.need>1&&a.got+1<a.need){
+    S.phase='result';
+    $('resarea').innerHTML=`<div class="res"><div class="msg" style="color:var(--l1)">Rigtigt! Ét legendarisk spørgsmål mere, så går den ind.</div><button class="btn" id="cont">Næste spørgsmål</button></div>`;
+    $('cont').onclick=()=>{a.got++;ask(a)};$('cont').focus();return;
+  }
+  S.phase='result';const t=S.players[S.holder].team;let msg;
+  if(a.type==='pass')msg=rp(ok?FUN.passOk:FUN.passNo);
+  else if(a.type==='dribble')msg=rp(ok?FUN.drOk:FUN.drNo);
+  else if(a.type==='through')msg=rp(ok?FUN.thrOk:FUN.thrNo);
+  else msg=rp(ok?FUN.goal:FUN.miss);
+  $('resarea').innerHTML=`<div class="res"><div class="msg" style="color:${ok?'var(--l1)':'var(--l4)'}">${msg}</div><button class="btn" id="cont">Fortsæt</button></div>`;
+  $('cont').onclick=()=>resolve(ok);$('cont').focus();
+}
+const rp=a=>a[Math.floor(Math.random()*a.length)];
+const FUN={
+ passOk:['Perfekt aflevering!','Den sad lige i fødderne!','Som sendt med GPS!','Smuk pasning, den ville Pedri være stolt af!'],
+ passNo:['Opsnappet!','Hov, forkert trøjefarve!','Den havnede hos modstanderen. Pinligt!','Lige i armene på modstanderen!'],
+ thrOk:['Fantastisk stikning!','Hvilket gennemspil!','Den skar forsvaret op som smør!'],
+ thrNo:['Stikningen bliver afbrudt!','Forsvaret læste den på lang afstand!','For hård! Den trillede ud til modstanderen.'],
+ drOk:['Flot dribling!','Han lagde ham på røven!','Lige mellem benene, en tunnel!','Skills!'],
+ drNo:['Tacklet! Bolden er tabt.','Han dribler sig selv i knude!','Bolden blev hængende under fødderne!'],
+ goal:['Han skyder... MÅL!','MÅÅÅL! Nettet bulrer!','Hvilken bombe! MÅL!','Lige op i krydset! MÅL!'],
+ miss:['Reddet af målmanden!','Over mål!','På stolpen og ud!','Den røg op på tredje række!','Målmanden griber den som en vandmelon!'],
+ tkOk:['Ren tackling! {n} vinder bolden.','Bum! {n} tager bolden helt rent.','{n} stjæler bolden som en ninja!'],
+ tkNo:['Frispark! {n} kommer for sent.','Av! Dommeren fløjter. {n} ramte kun benene.','{n} glider forbi og rammer luft. Frispark!']
+};
+const TACKLV={CBL:3,CBR:3,CML:4,CMR:4,LW:4,RW:4,ST:4};
+function tackler(){
+  const h=S.players[S.holder];let best=-1,bd=1e9;
+  S.players.forEach((p,i)=>{if(p.team===h.team||p.gk)return;const d=dist(p,h);if(d<bd){bd=d;best=i}});
+  return best;
+}
+const TACKLE_R=6;
+function canTackle(){const h=S.players[S.holder];if(h.gk)return -1;const ti=tackler();return ti>=0&&dist(S.players[ti],h)<=TACKLE_R?ti:-1}
+const noTackleMsg=()=>`<span style="font-size:13px;color:var(--muted)">Ingen forsvarer er tæt nok på til at tackle.</span>`;
+function startTackle(){
+  if(!S.tackleSec)return;
+  if(canTackle()<0){const el=$('tk');if(el)el.innerHTML=noTackleMsg();return}
+  const dtm=1-S.players[S.holder].team;const t0=Date.now(),T=(S.bot&&dtm===1?Math.min(S.tackleSec,S.bot.tkSec):S.tackleSec)*1000;clearInterval(timerInt);
+  const tick=()=>{
+    const el=$('tk');if(!el||S.phase!=='question'){clearInterval(timerInt);return}
+    const left=T-(Date.now()-t0);const dt=1-S.players[S.holder].team;
+    if(left>0){el.innerHTML=`<div class="tkbar"><div style="width:${(1-left/T)*100}%"></div></div><span style="font-size:13px;color:var(--muted)">${S.names[dt]} kan tackle om ${Math.ceil(left/1000)} sek</span>`;return}
+    clearInterval(timerInt);
+    const ti=tackler(),tp=S.players[ti],l=Math.max(3,adj(TACKLV[tp.n],dt,tp.rating));
+    if(S.bot&&dt===1){
+      el.innerHTML=`<span style="font-size:15px;color:#fca5a5;font-weight:600">${tp.name} går ind i tacklingen!</span>`;
+      setTimeout(()=>{
+        if(S.phase!=='question')return;
+        document.querySelectorAll('.opt').forEach(b=>b.disabled=true);const ms=$('msub');if(ms)ms.parentNode.remove();
+        S.phase='tackleq';S.tk={ti,l};answerTackle(Math.random()<S.bot.tk);
+      },1100);
+      return;
+    }
+    el.innerHTML=`<button class="tkbtn" id="tkgo" style="background:${COL[dt]};color:${TXT[dt]}">TACKL! ${tp.name} (${S.who[dt]})</button><span style="font-size:13px;color:var(--muted)">${POS[tp.n]}: <b style="color:${LV[l].c}">${LV[l].n}</b> spørgsmål</span>`;
+    $('tkgo').onclick=()=>doTackle(ti,l);
+  };
+  tick();timerInt=setInterval(tick,200);
+}
+function doTackle(ti,l){
+  if(S.phase!=='question'&&S.phase!=='bot')return;
+  clearInterval(timerInt);clearTimeout(S.botT);
+  const h=S.players[S.holder],tp=S.players[ti],dt=tp.team;
+  S.phase='tackleq';S.tk={ti,l};
+  const q=pick(l);prepQ(q);
+  setStatus(`<b style="color:${tc(dt)}">${S.who[dt]}</b> forsøger en tackling: ${tp.name} mod ${h.name}`);
+  $('panel').innerHTML=`<div class="qhead"><span class="pill" style="background:${LV[l].c}">${LV[l].n}</span><span class="cat">${qCat()} · Tackling: ${tp.name} (${POS[tp.n].toLowerCase()}) går ind i ${h.name}</span></div>
+    ${qHtml()}<div id="resarea"></div>`;
+  bindQ(answerTackle);
+}
+function answerTackle(ok){
+  if(S.phase!=='tackleq')return;
+  S.phase='result';
+  const tp=S.players[S.tk.ti];
+  $('resarea').innerHTML=`<div class="res"><div class="msg" style="color:${ok?'var(--l1)':'var(--l4)'}">${rp(ok?FUN.tkOk:FUN.tkNo).replace('{n}',tp.name)}</div><button class="btn" id="cont">Fortsæt</button></div>`;
+  $('cont').onclick=()=>{
+    const h=S.players[S.holder];S.min+=S.step;S.phase='anim';
+    if(ok){feed(`${tp.name} tackler ${h.name} og vinder bolden for ${S.names[tp.team]}.`);placeBall(tp.x,tp.y,true);setTimeout(()=>{S.holder=S.tk.ti;layout();render();after()},500)}
+    else{
+      const inBox=toA(h,h.x)>83&&Math.abs(h.y-31.5)<20;
+      if(inBox){feed(`Straffespark! ${tp.name} fælder ${h.name} i feltet.`);if(S.bot&&h.team===1)botSetPiece('pen');else setPiece('pen');return}
+      feed(`Frispark: ${tp.name} kommer for sent ind i ${h.name}.`);
+      if(S.bot&&h.team===1){if(shotNeed(h)>0&&Math.random()<0.5)botSetPiece('fk');else{layout();render();after()}return}
+      if(shotNeed(h)>0){
+        S.phase='fkchoice';
+        $('panel').innerHTML=`<div class="res" style="margin:0"><div><div class="msg">Frispark til ${S.names[h.team]}!</div><div style="color:var(--muted);margin-top:4px">${h.name} kan skyde direkte på mål eller spille den kort.</div></div><div style="display:flex;gap:8px"><button class="btn ghost" id="fkshort">Spil kort</button><button class="btn" id="fkshot">Skyd på mål</button></div></div>`;
+        $('fkshot').onclick=()=>setPiece('fk');
+        $('fkshort').onclick=()=>{layout();render();after()};
+        return;
+      }
+      layout();render();after();
+    }
+  };
+  $('cont').focus();
+}
+const ZONES=[{n:'Øverst venstre',g:8,y:14,x:50,yy:30},{n:'Øverst midt',g:12,y:16,x:150,yy:30},{n:'Øverst højre',g:8,y:14,x:250,yy:30},{n:'Nederst venstre',g:11,y:15,x:50,yy:80},{n:'Nederst midt',g:15,y:18,x:150,yy:80},{n:'Nederst højre',g:11,y:15,x:250,yy:80}];
+let kickRaf=null;
+function kickGame(o){
+  S.phase='kick';cancelAnimationFrame(kickRaf);
+  const head=`${o.tally||''}<div class="qhead"><span class="pill" style="background:${o.kind==='pen'?'#facc15':o.kind==='fk'?'#a78bfa':LV[o.level].c}">${o.kind==='pen'?'Straffespark':o.kind==='fk'?'Frispark':'Skud · '+LV[o.level].n}</span><span class="cat">${o.shooter} (${S.who[o.team]}) skal sparke for ${S.names[o.team]}</span></div>`;
+  const goalSvg=(sel)=>`<svg class="kgoal" viewBox="-10 0 320 118">
+    <rect x="0" y="5" width="300" height="100" fill="url(#net)" stroke="#fff" stroke-width="5"/>
+    <rect x="-10" y="104" width="320" height="10" fill="#2f9a4d"/>
+    ${ZONES.map((z,i)=>`<g class="kz" data-z="${i}"><rect x="${(i%3)*100+2}" y="${i<3?7:56}" width="96" height="47" fill="${sel===i?'rgba(250,204,21,.45)':'rgba(255,255,255,0.04)'}" stroke="rgba(255,255,255,.25)" stroke-dasharray="4 4"/></g>`).join('')}
+    <g id="kkeeper" pointer-events="none" style="transition:transform .45s ease-out"><circle cx="150" cy="62" r="11" fill="${GKC[1-o.team]}"/><rect x="138" y="72" width="24" height="30" rx="6" fill="${GKC[1-o.team]}"/></g>
+    <circle id="kball" pointer-events="none" cx="150" cy="112" r="7" fill="#fff" stroke="#111" style="transition:cx .45s ease-out,cy .45s ease-out"/>
+  </svg>`;
+  $('panel').innerHTML=`${head}<div class="qtext" style="margin-bottom:4px">Vælg hvor du vil sparke</div><div style="font-size:13px;color:var(--muted)">Hjørnerne er sværest at ramme, men midten er lettere for målmanden at læse.</div>${goalSvg(-1)}<div id="resarea"></div>`;
+  document.querySelectorAll('.kz').forEach(el=>el.onclick=()=>timing(+el.dataset.z));
+  function timing(zi){
+    const z=ZONES[zi];const k=(o.factor!==undefined?o.factor:(o.kind==='fk'?0.75:1))*(S.bot&&o.team===0?S.bot.gk:1);
+    const g=z.g*k,yw=z.y;const c=rnd(25+g/2+yw,75-g/2-yw);
+    const segs=[[c-g/2-yw,'#ef4444'],[yw,'#eab308'],[g,'#22c55e'],[yw,'#eab308'],[100-(c+g/2+yw),'#ef4444']];
+    $('panel').innerHTML=`${head}<div class="qtext" style="margin-bottom:4px">Sigt: ${z.n}. Tryk SKYD, når markøren er i det grønne!</div>
+      <div style="font-size:13px;color:var(--muted)">Grøn er mål, gul giver et legendarisk spørgsmål, og rød er forbi. Du kan også trykke på mellemrumstasten.</div>
+      ${goalSvg(zi)}
+      <div class="kbar" id="kbar">${segs.map(s=>`<div class="seg" style="width:${s[0]}%;background:${s[1]}"></div>`).join('')}<div class="kind" id="kind"></div></div>
+      <button class="btn" id="kshoot">SKYD!</button><div id="resarea"></div>`;
+    const period=o.period||(o.kind==='fk'?850:1150);const t0=performance.now();let pos=0;
+    const anim=t=>{const ph=((t-t0)%(2*period))/period;pos=ph<1?ph*100:(2-ph)*100;const el=$('kind');if(!el)return;el.style.left=`calc(${pos}% - 3px)`;kickRaf=requestAnimationFrame(anim)};
+    kickRaf=requestAnimationFrame(anim);
+    const shoot=()=>{
+      if(!$('kshoot'))return;cancelAnimationFrame(kickRaf);document.removeEventListener('keydown',key);
+      $('kshoot').remove();
+      const d=Math.abs(pos-c);const col=d<=g/2?'g':d<=g/2+yw?'y':'r';
+      const kd=Math.floor(Math.random()*3);$('kkeeper').style.transform=`translate(${(kd-1)*95}px,${zi<3?-18:0}px) rotate(${(kd-1)*35}deg)`;
+      const ball=$('kball');
+      if(col==='r'){ball.setAttribute('cx',z.x+(zi%3===1?0:(zi%3===0?-70:70)));ball.setAttribute('cy',zi<3?-15:z.yy);setTimeout(()=>o.onDone('miss','r'),700);return}
+      ball.setAttribute('cx',z.x);ball.setAttribute('cy',z.yy);
+      if(col==='g'){setTimeout(()=>o.onDone('goal','g'),700);return}
+      setTimeout(()=>{
+        const q=pick(4);prepQ(q);
+        $('resarea').innerHTML=`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div class="qhead"><span class="pill" style="background:var(--l2)">Gul</span><span class="cat">Svar rigtigt på et legendarisk spørgsmål for at score</span></div>${qHtml()}<div id="kres"></div></div>`;
+        bindQ(ok=>{setTimeout(()=>o.onDone(ok?'goal':'miss','y'),900)});
+      },600);
+    };
+    const key=e=>{if(e.code==='Space'){e.preventDefault();shoot()}};
+    document.addEventListener('keydown',key);
+    $('kshoot').onclick=shoot;
+  }
+}
+function setPiece(kind,level,need){
+  const h=S.players[S.holder],t=h.team;
+  S.phase='kick';render();
+  [0,1].forEach(x=>$('goalhot'+x).classList.add('hidden'));$('preview').innerHTML='';
+  if(kind==='pen'){h.x=toA(h,89);h.y=31.5;$('pl'+S.holder).style.transform=`translate(${px(h.x)}px,${py(h.y)}px)`;placeBall(toA(h,88.5),31.5)}
+  let fac=kind==='shot'?(need>1?0.3:{1:1.2,2:1,3:0.7,4:0.45}[level]):undefined;
+  if(h.rating!==undefined){const rf=clamp((h.rating-40)/35,0.5,1.4);fac=(fac===undefined?(kind==='fk'?0.75:1):fac)*rf}
+  const per=kind==='shot'?1150-(need>1?4:level-1)*110:undefined;
+  setStatus(kind==='shot'?`<b style="color:${tc(t)}">${h.name}</b> gør klar til at skyde. Vælg hvor i målet!`:`${kind==='pen'?'STRAFFESPARK':'Frispark'} til <b style="color:${tc(t)}">${S.names[t]}</b>! ${h.name} lægger bolden til rette.`);
+  S.min+=kind==='shot'?S.step:0;
+  kickGame({kind,team:t,shooter:h.name,factor:fac,period:per,level:need>1?4:level,onDone:(r,col)=>setPieceDone(kind,h,t,r,col)});
+}
+function setPieceDone(kind,h,t,r,col){{
+    const msg=r==='goal'?rp(FUN.goal):(col==='r'?rp(['Forbi!','Over mål!','På stolpen og ud!','Den røg op på tredje række!']):'Reddet af målmanden!');
+    $('resarea').insertAdjacentHTML('beforeend',`<div class="res"><div class="msg" style="color:${r==='goal'?'var(--l1)':'var(--l4)'}">${msg}</div><button class="btn" id="cont">Fortsæt</button></div>`);
+    $('cont').onclick=()=>{
+      S.phase='anim';const g=goalPt(t);
+      if(r==='goal'){
+        placeBall(g.x+(t?-1.2:1.2),31.5+rnd(-2.5,2.5),true);S.score[t]++;
+        feed(`MÅL! ${h.name} scorer${kind==='pen'?' på straffespark':kind==='fk'?' på frispark':''} for ${S.names[t]}.`);
+        setTimeout(()=>{const b=$('big');b.textContent='MÅL!';b.style.color=tc(t);b.classList.remove('show');void b.offsetWidth;b.classList.add('show');renderBoard()},350);
+        setTimeout(()=>kickoff(1-t),2300);
+      } else {
+        const gk=S.players.findIndex(p=>p.gk&&p.team!==t);
+        feed(`${h.name} ${kind==='pen'?'brænder straffesparket':kind==='fk'?'brænder frisparket':'skyder, men scorer ikke'}. ${S.players[gk].name} får bolden.`);
+        placeBall(S.players[gk].x,S.players[gk].y,true);
+        setTimeout(()=>{S.holder=gk;layout();render();after()},700);
+      }
+    };
+  }
+}
+function feed(txt){S.feed.unshift(`${Math.min(90,S.min)}' ${txt}`);S.feed=S.feed.slice(0,5)}
+
+function resolve(ok){
+  const a=S.action;const h=S.players[S.holder];const t=h.team;
+  S.min+=S.step;S.phase='anim';$('panel').innerHTML=`<div class="feed">${S.feed.map(f=>`<div>${f}</div>`).join('')}</div>`;
+  $('preview').innerHTML='';
+  if(a.type==='dribble'){
+    if(ok){
+      feed(`${h.name} dribler sig fri.`);
+      h.x=a.pt.x;h.y=a.pt.y;$('pl'+S.holder).style.transform=`translate(${px(h.x)}px,${py(h.y)}px)`;
+      placeBall(h.x+1.6*(t?-1:1),h.y+1.4);
+      setTimeout(()=>{layout();render();after()},800);
+    } else {
+      let best=-1,bd=1e9;
+      S.players.forEach((p,i)=>{if(p.team===t)return;const d=Math.min(dist(p,a.pt),segDist(p,h,a.pt).d+2);if(d<bd){bd=d;best=i}});
+      const ip=S.players[best];
+      feed(`${ip.name} (${S.names[1-t]}) stopper driblingen fra ${h.name}.`);
+      placeBall(ip.x,ip.y,true);
+      setTimeout(()=>{S.holder=best;layout();render();after()},550);
+    }
+    return;
+  }
+  if(a.type==='through'){
+    const r=S.players[a.to];
+    if(ok){
+      feed(`${h.name} stikker bolden igennem til ${r.name}!`);
+      r.x=a.pt.x;r.y=a.pt.y;$('pl'+a.to).style.transform=`translate(${px(r.x)}px,${py(r.y)}px)`;
+      placeBall(a.pt.x,a.pt.y);
+      setTimeout(()=>{S.holder=a.to;layout();render();after()},850);
+    } else {
+      let best=-1,bd=1e9;
+      S.players.forEach((p,i)=>{if(p.team===t)return;const d=Math.min(dist(p,a.pt),segDist(p,h,a.pt).d+3);if(d<bd){bd=d;best=i}});
+      const ip=S.players[best];
+      feed(`${ip.name} (${S.names[1-t]}) læser stikningen og vinder bolden.`);
+      placeBall(ip.x,ip.y,true);
+      setTimeout(()=>{S.holder=best;layout();render();after()},550);
+    }
+    return;
+  }
+  if(a.type==='pass'){
+    const tgt=S.players[a.to];
+    if(ok){
+      feed(`${h.name} spiller bolden til ${tgt.name}.`);
+      placeBall(tgt.x,tgt.y,true);
+      setTimeout(()=>{S.holder=a.to;S.dribble=true;layout(tgt.x,tgt.y);render();after()},500);
+    } else {
+      let best=-1,bd=1e9;
+      S.players.forEach((p,i)=>{if(p.team===t)return;const r=segDist(p,h,tgt);const d=r.d+Math.abs(clamp(r.t,0,1)-0.6)*8;if(d<bd){bd=d;best=i}});
+      const ip=S.players[best];
+      feed(`${ip.name} (${S.names[1-t]}) opsnapper afleveringen.`);
+      placeBall(ip.x,ip.y,true);
+      setTimeout(()=>{S.holder=best;layout(ip.x,ip.y);render();after()},550);
+    }
+  } else {
+    const g=goalPt(t);
+    if(ok){
+      placeBall(g.x+(t?-1.2:1.2),g.y+rnd(-2.5,2.5),true);
+      S.score[t]++;feed(`MÅL! ${h.name} scorer for ${S.names[t]}.`);
+      setTimeout(()=>{const b=$('big');b.textContent='MÅL!';b.style.color=tc(t);b.classList.remove('show');void b.offsetWidth;b.classList.add('show');renderBoard()},350);
+      setTimeout(()=>kickoff(1-t),2300);
+    } else {
+      const gk=S.players.findIndex(p=>p.gk&&p.team!==t);
+      placeBall(g.x+(t?2:-2),g.y+rnd(-5,5),true);
+      feed(`${h.name} skyder, men ${S.players[gk].name} får fat i bolden.`);
+      setTimeout(()=>{placeBall(S.players[gk].x,S.players[gk].y,true)},450);
+      setTimeout(()=>{S.holder=gk;layout(S.players[gk].x,31.5);render();after()},950);
+    }
+  }
+}
+function kickoff(team){
+  S.holder=S.players.findIndex(p=>p.team===team&&p.n==='ST');
+  layout(50,31.5,true);
+  render();after();
+}
+function after(){
+  if(S.min>=45&&!S.half){S.half=true;showBreak('Pause',`Stillingen er ${S.score[0]}-${S.score[1]}. Tag en tår vand, og så fortsætter vi.`,nextTurn);return}
+  if(S.min>=90){
+    S.min=90;
+    if(S.score[0]===S.score[1]&&!S.noPens)showBreak('Slutfløjt, uafgjort!',`Det står ${S.score[0]}-${S.score[1]}. Kampen skal afgøres på straffespark.`,startPens,'Til straffesparkene');
+    else endGame();
+    return;
+  }
+  nextTurn();
+}
+function nextTurn(){
+  if(S.bot&&S.players[S.holder].team===1){S.phase='bot';render();botTurn();return}
+  S.phase='choose';render();setStatus(chooseText());showFeed();
+}
+function showFeed(){$('panel').innerHTML=`<div class="feed">${S.feed.length?S.feed.map(f=>`<div>${f}</div>`).join(''):'<div>Kampen er i gang.</div>'}</div>`}
+function showBreak(title,txt,fn,btn){
+  S.phase='break';renderBoard();
+  $('panel').innerHTML=`<div class="res" style="margin:0"><div><div class="msg">${title}</div><div style="color:var(--muted);margin-top:4px">${txt}</div></div><button class="btn" id="cont">${btn||'Fortsæt'}</button></div>`;
+  $('cont').onclick=fn;
+}
+
+function startPens(){
+  S.pens={k:[0,0],r:[[],[]],turn:0};S.phase='pens';penAsk();
+}
+function penAsk(){
+  const t=S.pens.turn;
+  $('players').querySelectorAll('.badge').forEach(b=>b.setAttribute('opacity',0));
+  const h=S.players.findIndex(p=>p.team===t&&p.n==='ST');S.holder=h;
+  const p=S.players[h];p.x=t?11:89;p.y=31.5;
+  S.players.forEach((q2,i)=>{if(q2.gk){q2.x=q2.team?96:4;q2.y=31.5}else if(i!==h){q2.x=50+rnd(-6,6);q2.y=8+((i*7)%48)}});
+  S.players.forEach((q2,i)=>{$('pl'+i).style.transform=`translate(${px(q2.x)}px,${py(q2.y)}px)`;$('pl'+i).querySelector('.ring').setAttribute('opacity',i===h?1:0)});
+  placeBall(t?11.5:88.5,31.5);
+  [0,1].forEach(x=>$('goalhot'+x).classList.add('hidden'));renderBoard();
+  setStatus(`Straffespark: <b style="color:${tc(t)}">${S.players[h].name}</b> (${S.who[t]}) skal sparke for ${S.names[t]}.`);
+  if(S.bot&&t===1){
+    S.phase='kick';
+    $('panel').innerHTML=`${penTally()}<div class="qhead"><span class="pill" style="background:#94a3b8">Computeren</span><span class="cat">${S.players[h].name} lægger bolden på pletten…</span></div><div id="resarea"></div>`;
+    setTimeout(()=>penResult(Math.random()<S.bot.pen),1500);return;
+  }
+  kickGame({kind:'pen',team:t,shooter:S.players[h].name,tally:penTally(),onDone:r=>penResult(r==='goal')});
+}
+function penTally(){
+  return `<div class="pens">${[0,1].map(t=>{const r=S.pens.r[t];const n=Math.max(5,r.length);let d='';for(let i=0;i<n;i++)d+=`<div class="dot ${r[i]===true?'g':r[i]===false?'m':''}"></div>`;return `<div class="row"><b style="color:${tc(t)};min-width:80px">${S.names[t]}</b>${d}</div>`}).join('')}</div>`;
+}
+function penResult(ok){
+  const t=S.pens.turn;S.pens.r[t].push(ok);if(ok)S.pens.k[t]++;
+  const g=goalPt(t);
+  placeBall(g.x+(t?-1:1),31.5+rnd(-2.5,2.5),true);
+  if(!ok)setTimeout(()=>placeBall(t?4:96,31.5,true),450);
+  const done=penDecided();
+  $('resarea').innerHTML=`<div class="res"><div class="msg" style="color:${ok?'var(--l1)':'var(--l4)'}">${ok?'Sikkert i nettet!':'Reddet!'}</div><button class="btn" id="cont">${done?'Se resultatet':'Næste spark'}</button></div>`;
+  $('cont').onclick=()=>{if(done)endGame(true);else{S.pens.turn=1-t;penAsk()}};
+}
+function penDecided(){
+  const [a,b]=S.pens.k,[na,nb]=[S.pens.r[0].length,S.pens.r[1].length];
+  if(na<=5&&nb<=5){const ra=5-na,rb=5-nb;if(a>b+rb||b>a+ra)return true;if(na===5&&nb===5)return a!==b;return false}
+  return na===nb&&a!==b;
+}
+function endGame(pens){
+  S.phase='end';renderBoard();[0,1].forEach(x=>$('goalhot'+x).classList.add('hidden'));
+  let w;
+  if(pens)w=S.pens.k[0]>S.pens.k[1]?0:1;else w=S.score[0]===S.score[1]?-1:S.score[0]>S.score[1]?0:1;
+  const extra=pens?` (${S.pens.k[0]}-${S.pens.k[1]} på straffespark)`:'';
+  setStatus('Slutfløjt!');
+  const b=$('big');b.textContent=w<0?'UAFGJORT!':S.names[w].toUpperCase()+' VINDER!';b.style.color=w<0?'#fff':tc(w);b.style.fontSize='clamp(32px,7vw,80px)';b.classList.remove('show');void b.offsetWidth;b.classList.add('show');
+  if(S.career){careerEnd(pens,w,b);return}
+  $('panel').innerHTML=`<div class="res" style="margin:0"><div><div class="msg" style="color:${tc(w)}">${S.names[w]} (${S.who[w]}) vinder ${S.score[0]}-${S.score[1]}${extra}</div><div style="color:var(--muted);margin-top:4px">Godt spillet af begge hold.</div></div><div style="display:flex;gap:8px"><button class="btn ghost" id="setupbtn">Skift indstillinger</button><button class="btn" id="again">Spil igen</button></div></div>`;
+  $('again').onclick=()=>{b.style.fontSize='';newGame()};
+  $('setupbtn').onclick=()=>{b.style.fontSize='';seenInfo();$('game').classList.add('hidden');$('setup').classList.remove('hidden')};
+}
+
+function newGame(){
+  S.score=[0,0];S.min=0;S.half=false;S.feed=[];S.phase='choose';
+  initPlayers();buildPlayers();
+  const first=Math.random()<.5?0:1;
+  S.holder=S.players.findIndex(p=>p.team===first&&p.n==='ST');
+  layout(50,31.5,true);S.correct=0;
+  S.feed=[`${S.names[first]} (${S.who[first]}) vandt lodtrækningen og starter med bolden.`];
+  nextTurn();
+}
+function stripes(){let s='';for(let i=0;i<10;i++)s+=`<rect x="${40+i*92}" y="30" width="92" height="580" fill="${i%2?'#2a8a45':'#2f9a4d'}"/>`;$('stripes').innerHTML=`<rect x="0" y="0" width="1000" height="640" fill="#257a3d"/>`+s}
+
+$('start').onclick=()=>{
+  S.career=false;S.bot=null;S.mode=null;S.noPens=false;
+  S.who=[$('n0').value.trim()||'Hold 1',$('n1').value.trim()||'Hold 2'];
+  S.clubs=[CLUBS[+$('c0').value],CLUBS[+$('c1').value]];
+  S.names=S.clubs.map(c=>c.short);
+  COL=[S.clubs[0].col,S.clubs[1].col];TXT=[S.clubs[0].txt,S.clubs[1].txt];
+  if(cdist(COL[0],COL[1])<150){COL[1]=S.clubs[1].away;TXT[1]=S.clubs[1].atxt;if(cdist(COL[0],COL[1])<150){COL[0]=S.clubs[0].away;TXT[0]=S.clubs[0].atxt}}
+  [0,1].forEach(t=>{$('bc'+t).style.background=COL[t];$('arrp'+t).setAttribute('fill',COL[t]==='#f5f5f5'?'#fff':COL[t])});
+  S.off=[+$('o0').value,+$('o1').value];S.step=+$('len').value;S.timer=false;S.tackleSec=+$('tkSel').value;
+  $('t0').textContent=S.names[0];$('t1').textContent=S.names[1];
+  $('setup').classList.add('hidden');$('game').classList.remove('hidden');
+  pools={};newGame();
+};
+
+// ================= KARRIERE =================
+const POSG={GK:'GK',CBL:'DEF',CBR:'DEF',CML:'MID',CMR:'MID',LW:'LW',RW:'RW',ST:'ST'};
+const POSL={GK:'Målmand',DEF:'Forsvar',MID:'Midtbane',LW:'Venstre kant',RW:'Højre kant',ST:'Angriber'};
+const SLOTL={GK:'Målmand',CBL:'Forsvar (V)',CBR:'Forsvar (H)',CML:'Midtbane (V)',CMR:'Midtbane (H)',LW:'Venstre kant',RW:'Højre kant',ST:'Angriber'};
+const SLOTS=['GK','CBL','CBR','CML','CMR','LW','RW','ST'];
+// [navn, position, vores egen vurdering, ikon]
+const REAL=[
+['Alisson','GK',89],['Thibaut Courtois','GK',89],['Gianluigi Donnarumma','GK',88],['Jan Oblak','GK',87],['Mike Maignan','GK',86],['David Raya','GK',85],['Marc-André ter Stegen','GK',85],['Kasper Schmeichel','GK',78],['Mads Hermansen','GK',79],
+['Virgil van Dijk','DEF',89],['William Saliba','DEF',88],['Rúben Dias','DEF',87],['Gabriel Magalhães','DEF',87],['Achraf Hakimi','DEF',88],['Antonio Rüdiger','DEF',86],['Marquinhos','DEF',85],['Joško Gvardiol','DEF',85],['Pau Cubarsí','DEF',84],['Éder Militão','DEF',84],['Kim Min-jae','DEF',84],['Andreas Christensen','DEF',82],['Joachim Andersen','DEF',80],['Victor Kristiansen','DEF',76],['Nuno Mendes','DEF',86],
+['Rodri','MID',90],['Jude Bellingham','MID',89],['Pedri','MID',89],['Vitinha','MID',89],['Federico Valverde','MID',88],['Declan Rice','MID',88],['Joshua Kimmich','MID',88],['Jamal Musiala','MID',88],['Florian Wirtz','MID',88],['Martin Ødegaard','MID',87],['Kevin De Bruyne','MID',86],['Alexis Mac Allister','MID',86],['Dominik Szoboszlai','MID',85],['Fabián Ruiz','MID',85],['Morten Hjulmand','MID',82],['Pierre-Emile Højbjerg','MID',81],['Christian Eriksen','MID',79],
+['Vinícius Júnior','LW',90],['Raphinha','LW',88],['Khvicha Kvaratskhelia','LW',88],['Luis Díaz','LW',86],['Nico Williams','LW',85],['Cody Gakpo','LW',84],['Gabriel Martinelli','LW',83],['Jérémy Doku','LW',82],
+['Lamine Yamal','RW',91],['Mohamed Salah','RW',90],['Ousmane Dembélé','RW',90],['Bukayo Saka','RW',88],['Michael Olise','RW',88],['Bernardo Silva','RW',85],['Désiré Doué','RW',85],
+['Kylian Mbappé','ST',92],['Erling Haaland','ST',91],['Harry Kane','ST',91],['Lautaro Martínez','ST',87],['Alexander Isak','ST',87],['Robert Lewandowski','ST',86],['Viktor Gyökeres','ST',86],['Victor Osimhen','ST',86],['Rasmus Højlund','ST',80],['Jonas Wind','ST',77],
+['Peter Schmeichel','GK',93,1],['Paolo Maldini','DEF',94,1],['Franz Beckenbauer','DEF',94,1],['Michael Laudrup','MID',93,1],['Zinedine Zidane','MID',95,1],['Diego Maradona','MID',96,1],['Ronaldinho','LW',94,1],['Brian Laudrup','LW',89,1],['Johan Cruyff','RW',95,1],['Pelé','ST',97,1],['Ronaldo Nazário','ST',96,1],['Allan Simonsen','RW',88,1]
+];
+
+const REAL2=[
+['Emiliano Martínez','GK',86],['Ederson','GK',86],['André Onana','GK',81],['Jordan Pickford','GK',83],['Nick Pope','GK',82],['Robert Sánchez','GK',79],['Guglielmo Vicario','GK',83],['Bernd Leno','GK',82],['Yann Sommer','GK',85],['Gregor Kobel','GK',86],['Unai Simón','GK',85],['Giorgi Mamardashvili','GK',82],['Diogo Costa','GK',85],['Lucas Chevalier','GK',82],['Matvei Safonov','GK',79],['Wojciech Szczęsny','GK',83],['Manuel Neuer','GK',86],['Bart Verbruggen','GK',80],['Joan García','GK',83],['Álex Remiro','GK',83],['Dean Henderson','GK',80],['Frederik Rønnow','GK',77],['Filip Jørgensen','GK',75],
+['Trent Alexander-Arnold','DEF',86],['Andrew Robertson','DEF',83],['Ibrahima Konaté','DEF',85],['Micky van de Ven','DEF',84],['Cristian Romero','DEF',85],['John Stones','DEF',83],['Kyle Walker','DEF',80],['Reece James','DEF',84],['Levi Colwill','DEF',82],['Marc Cucurella','DEF',84],['Ben White','DEF',83],['Jurriën Timber','DEF',84],['Riccardo Calafiori','DEF',81],['Lisandro Martínez','DEF',83],['Matthijs de Ligt','DEF',82],['Luke Shaw','DEF',79],['Diogo Dalot','DEF',80],['Pedro Porro','DEF',84],['Destiny Udogie','DEF',81],['Ezri Konsa','DEF',82],['Pau Torres','DEF',82],['Kieran Trippier','DEF',80],['Tino Livramento','DEF',80],['Sven Botman','DEF',81],['Murillo','DEF',80],['Lewis Hall','DEF',79],
+['Alessandro Bastoni','DEF',87],['Federico Dimarco','DEF',85],['Denzel Dumfries','DEF',83],['Theo Hernández','DEF',84],['Fikayo Tomori','DEF',81],['Gleison Bremer','DEF',85],['Alessandro Buongiorno','DEF',82],['Giovanni Di Lorenzo','DEF',83],['Alejandro Grimaldo','DEF',85],['Jeremie Frimpong','DEF',84],['Jonathan Tah','DEF',85],['Dayot Upamecano','DEF',84],['Alphonso Davies','DEF',84],['Nico Schlotterbeck','DEF',84],['Josip Stanišić','DEF',79],
+['Jules Koundé','DEF',85],['Ronald Araújo','DEF',84],['Alejandro Balde','DEF',83],['Iñigo Martínez','DEF',83],['Dani Carvajal','DEF',84],['Ferland Mendy','DEF',82],['Dean Huijsen','DEF',82],['José María Giménez','DEF',83],['Robin Le Normand','DEF',82],['Marcos Llorente','DEF',84],['William Pacho','DEF',83],['Lucas Hernández','DEF',82],
+['Jannik Vestergaard','DEF',76],['Victor Nelsson','DEF',77],['Rasmus Kristensen','DEF',77],['Joakim Mæhle','DEF',77],['Patrick Dorgu','DEF',79],['Alexander Bah','DEF',77],['Elias Jelert','DEF',73],
+['Bruno Fernandes','MID',87],['Kobbie Mainoo','MID',80],['Casemiro','MID',80],['Manuel Ugarte','MID',80],['Moisés Caicedo','MID',86],['Enzo Fernández','MID',85],['Cole Palmer','MID',87],['Phil Foden','MID',86],['İlkay Gündoğan','MID',83],['Mateo Kovačić','MID',83],['Tijjani Reijnders','MID',85],['Mikel Merino','MID',83],['Ryan Gravenberch','MID',85],['Curtis Jones','MID',81],['Sandro Tonali','MID',85],['Bruno Guimarães','MID',86],['Joelinton','MID',81],['James Maddison','MID',83],['Pape Matar Sarr','MID',80],['Morgan Gibbs-White','MID',82],['Eberechi Eze','MID',84],['Adam Wharton','MID',80],['Elliot Anderson','MID',81],['Morgan Rogers','MID',82],['John McGinn','MID',82],['Boubacar Kamara','MID',82],['Youri Tielemans','MID',82],['Mason Mount','MID',79],
+['João Neves','MID',85],['Warren Zaïre-Emery','MID',81],['Frenkie de Jong','MID',86],['Gavi','MID',83],['Fermín López','MID',82],['Dani Olmo','MID',85],['Marc Casadó','MID',79],['Aurélien Tchouaméni','MID',85],['Eduardo Camavinga','MID',84],['Arda Güler','MID',83],['Luka Modrić','MID',84],['Koke','MID',81],['Rodrigo De Paul','MID',83],['Pablo Barrios','MID',80],['Martín Zubimendi','MID',85],
+['Nicolò Barella','MID',87],['Hakan Çalhanoğlu','MID',86],['Henrikh Mkhitaryan','MID',81],['Scott McTominay','MID',84],['Stanislav Lobotka','MID',84],['Teun Koopmeiners','MID',82],['Manuel Locatelli','MID',82],['Leon Goretzka','MID',83],['Aleksandar Pavlović','MID',83],['Granit Xhaka','MID',84],['Exequiel Palacios','MID',82],['Xavi Simons','MID',84],['Julian Brandt','MID',82],
+['Christian Nørgaard','MID',78],['Mikkel Damsgaard','MID',79],['Albert Grønbæk','MID',75],['Mathias Jensen','MID',76],['Morten Frendrup','MID',77],['Matt O\'Riley','MID',79],
+['Son Heung-min','LW',85],['Marcus Rashford','LW',82],['Alejandro Garnacho','LW',81],['Leandro Trossard','LW',83],['Anthony Gordon','LW',83],['Jack Grealish','LW',81],['Kingsley Coman','LW',83],['Leroy Sané','LW',84],['Rafael Leão','LW',86],['Bradley Barcola','LW',83],['Antoine Semenyo','LW',81],['Kaoru Mitoma','LW',82],['Jesper Lindstrøm','LW',76],['Sadio Mané','LW',81],['Neymar','LW',80],
+['Lionel Messi','RW',88],['Rodrygo','RW',85],['Christian Pulisic','RW',84],['Brahim Díaz','RW',82],['Jarrod Bowen','RW',83],['Mohammed Kudus','RW',83],['Bryan Mbeumo','RW',84],['Dejan Kulusevski','RW',83],['Noni Madueke','RW',81],['Pedro Neto','RW',82],['Serge Gnabry','RW',82],['Takefusa Kubo','RW',83],['Ademola Lookman','RW',85],['Riyad Mahrez','RW',81],['Raheem Sterling','RW',79],['Andreas Skov Olsen','RW',78],['Gustav Isaksen','RW',78],
+['Ollie Watkins','ST',84],['Dominic Solanke','ST',81],['Nicolas Jackson','ST',81],['João Pedro','ST',82],['Chris Wood','ST',81],['Jean-Philippe Mateta','ST',81],['Hugo Ekitike','ST',84],['Darwin Núñez','ST',81],['Benjamin Šeško','ST',82],['Joshua Zirkzee','ST',78],['Kai Havertz','ST',84],['Gabriel Jesus','ST',80],['Omar Marmoush','ST',83],['Matheus Cunha','ST',84],['Julián Álvarez','ST',87],['Antoine Griezmann','ST',85],['Alexander Sørloth','ST',83],['Gonçalo Ramos','ST',81],['Randal Kolo Muani','ST',81],['Dušan Vlahović','ST',83],['Marcus Thuram','ST',85],['Mateo Retegui','ST',83],['Romelu Lukaku','ST',81],['Serhou Guirassy','ST',85],['Patrik Schick','ST',83],['Niclas Füllkrug','ST',79],['Victor Boniface','ST',82],['Mikel Oyarzabal','ST',83],['Álvaro Morata','ST',80],['Jonathan David','ST',84],['Loïs Openda','ST',82],['Santiago Giménez','ST',81],['Cristiano Ronaldo','ST',84],['Karim Benzema','ST',83],['Kasper Dolberg','ST',76],['Yussuf Poulsen','ST',77],['Conrad Harder','ST',74],['Mika Biereth','ST',76],
+['Lev Yashin','GK',94,1],['Gianluigi Buffon','GK',93,1],['Iker Casillas','GK',91,1],
+['Carles Puyol','DEF',91,1],['Roberto Carlos','DEF',91,1],['Cafu','DEF',91,1],['Fabio Cannavaro','DEF',91,1],['Rio Ferdinand','DEF',90,1],['John Terry','DEF',89,1],['Morten Olsen','DEF',88,1],['Daniel Agger','DEF',85,1],
+['Xavi','MID',92,1],['Andrés Iniesta','MID',93,1],['Kaká','MID',92,1],['Andrea Pirlo','MID',91,1],['Steven Gerrard','MID',91,1],['Frank Lampard','MID',90,1],
+['Franck Ribéry','LW',90,1],['Luís Figo','RW',92,1],['David Beckham','RW',90,1],['Arjen Robben','RW',91,1],['George Best','RW',93,1],
+['Thierry Henry','ST',93,1],['Zlatan Ibrahimović','ST',92,1],['Wayne Rooney','ST',91,1],['Marco van Basten','ST',95,1],['Gerd Müller','ST',95,1],['Eusébio','ST',94,1],['Preben Elkjær','ST',89,1],['Jon Dahl Tomasson','ST',86,1]
+];
+REAL2.forEach(x=>{if(!REAL.some(y=>y[0]===x[0]))REAL.push(x)});
+const REAL3=[["Aaron Ramsdale", "GK", 79], ["Mark Flekken", "GK", 78], ["José Sá", "GK", 79], ["Martin Dúbravka", "GK", 77], ["Andriy Lunin", "GK", 80], ["Iñaki Peña", "GK", 78], ["Mile Svilar", "GK", 84], ["Alex Meret", "GK", 83], ["Michele Di Gregorio", "GK", 82], ["Ivan Provedel", "GK", 81], ["David de Gea", "GK", 83], ["Oliver Baumann", "GK", 81], ["Kevin Trapp", "GK", 80], ["Lukáš Hrádecký", "GK", 81], ["Alexander Nübel", "GK", 80], ["Brice Samba", "GK", 81], ["Gerónimo Rulli", "GK", 81], ["Yassine Bounou", "GK", 83], ["Nathan Trott", "GK", 72], ["Patrick Pentz", "GK", 73], ["Jesper Hansen", "GK", 70], ["Elías Rafn Ólafsson", "GK", 71], ["Oleksandr Zinchenko", "DEF", 79], ["Myles Lewis-Skelly", "DEF", 79], ["Rico Lewis", "DEF", 80], ["Nathan Aké", "DEF", 82], ["Manuel Akanji", "DEF", 83], ["Wesley Fofana", "DEF", 80], ["Malo Gusto", "DEF", 81], ["Trevoh Chalobah", "DEF", 80], ["Joe Gomez", "DEF", 79], ["Conor Bradley", "DEF", 79], ["Milos Kerkez", "DEF", 81], ["Harry Maguire", "DEF", 78], ["Leny Yoro", "DEF", 79], ["Noussair Mazraoui", "DEF", 80], ["Marc Guéhi", "DEF", 83], ["Daniel Muñoz", "DEF", 81], ["Maxence Lacroix", "DEF", 80], ["Dan Burn", "DEF", 79], ["Pervis Estupiñán", "DEF", 79], ["Jan Paul van Hecke", "DEF", 79], ["Aaron Wan-Bissaka", "DEF", 80], ["Ola Aina", "DEF", 80], ["Nikola Milenković", "DEF", 80], ["Antonee Robinson", "DEF", 81], ["Fran García", "DEF", 79], ["David Alaba", "DEF", 80], ["Clément Lenglet", "DEF", 79], ["Nahuel Molina", "DEF", 81], ["Dávid Hancko", "DEF", 82], ["Óscar Mingueza", "DEF", 80], ["Daniel Vivian", "DEF", 81], ["Yeray Álvarez", "DEF", 79], ["Raúl Asencio", "DEF", 78], ["Federico Gatti", "DEF", 80], ["Andrea Cambiaso", "DEF", 83], ["Pierre Kalulu", "DEF", 81], ["Amir Rrahmani", "DEF", 82], ["Mathías Olivera", "DEF", 80], ["Gianluca Mancini", "DEF", 81], ["Evan Ndicka", "DEF", 82], ["Francesco Acerbi", "DEF", 81], ["Stefan de Vrij", "DEF", 81], ["Benjamin Pavard", "DEF", 82], ["Yann Aurel Bisseck", "DEF", 81], ["Isak Hien", "DEF", 80], ["Alessio Romagnoli", "DEF", 80], ["Waldemar Anton", "DEF", 81], ["Julian Ryerson", "DEF", 79], ["Raphaël Guerreiro", "DEF", 80], ["Konrad Laimer", "DEF", 82], ["Hiroki Ito", "DEF", 80], ["Piero Hincapié", "DEF", 82], ["Edmond Tapsoba", "DEF", 82], ["Willi Orban", "DEF", 82], ["David Raum", "DEF", 81], ["Castello Lukeba", "DEF", 81], ["Maximilian Mittelstädt", "DEF", 80], ["Lucas Beraldo", "DEF", 79], ["Leonardo Balerdi", "DEF", 81], ["Nicolás Tagliafico", "DEF", 79], ["Gonçalo Inácio", "DEF", 83], ["Ousmane Diomande", "DEF", 82], ["Nicolás Otamendi", "DEF", 79], ["Tomás Araújo", "DEF", 80], ["Kalidou Koulibaly", "DEF", 80], ["Jordi Alba", "DEF", 77], ["Gabriel Pereira", "DEF", 72], ["Pantelis Hatzidiakos", "DEF", 73], ["Frederik Alves", "DEF", 71], ["Mads Bech Sørensen", "DEF", 71], ["Frederik Tingager", "DEF", 69], ["Sean Klaiber", "DEF", 70], ["Oliver Provstgaard", "DEF", 72], ["Thomas Kristensen", "DEF", 74], ["Lucas Paquetá", "MID", 82], ["Tomáš Souček", "MID", 79], ["James Ward-Prowse", "MID", 78], ["Douglas Luiz", "MID", 80], ["Amadou Onana", "MID", 81], ["Rodrigo Bentancur", "MID", 81], ["Lucas Bergvall", "MID", 79], ["Carlos Baleba", "MID", 81], ["Matheus Nunes", "MID", 80], ["Harvey Elliott", "MID", 79], ["Conor Gallagher", "MID", 82], ["Romeo Lavia", "MID", 79], ["Emile Smith Rowe", "MID", 79], ["João Palhinha", "MID", 82], ["Wataru Endo", "MID", 78], ["Dani Ceballos", "MID", 80], ["Brais Méndez", "MID", 81], ["Oihan Sancet", "MID", 81], ["Isco", "MID", 82], ["Giovani Lo Celso", "MID", 81], ["Álex Baena", "MID", 83], ["Dani Parejo", "MID", 80], ["Javi Guerra", "MID", 79], ["Davide Frattesi", "MID", 82], ["Piotr Zieliński", "MID", 81], ["André-Frank Zambo Anguissa", "MID", 83], ["Bryan Cristante", "MID", 79], ["Manu Koné", "MID", 82], ["Lorenzo Pellegrini", "MID", 80], ["Weston McKennie", "MID", 80], ["Khéphren Thuram", "MID", 82], ["Samuele Ricci", "MID", 80], ["Marten de Roon", "MID", 81], ["Adrien Rabiot", "MID", 82], ["Nico Paz", "MID", 81], ["Charles De Ketelaere", "MID", 82], ["Marcel Sabitzer", "MID", 81], ["Felix Nmecha", "MID", 80], ["Pascal Groß", "MID", 80], ["Robert Andrich", "MID", 80], ["Christoph Baumgartner", "MID", 80], ["Angelo Stiller", "MID", 82], ["Enzo Millot", "MID", 80], ["Hugo Larsson", "MID", 79], ["Nadiem Amiri", "MID", 80], ["Thomas Müller", "MID", 82], ["Corentin Tolisso", "MID", 80], ["Rayan Cherki", "MID", 82], ["Lee Kang-in", "MID", 80], ["Takumi Minamino", "MID", 80], ["Aleksandr Golovin", "MID", 79], ["Pedro Gonçalves", "MID", 82], ["Orkun Kökçü", "MID", 82], ["Florentino Luís", "MID", 79], ["Alan Varela", "MID", 80], ["Ismael Saibari", "MID", 79], ["Malik Tillman", "MID", 79], ["Kenneth Taylor", "MID", 79], ["Jordan Henderson", "MID", 78], ["N'Golo Kanté", "MID", 81], ["Fabinho", "MID", 79], ["Rúben Neves", "MID", 81], ["Marcelo Brozović", "MID", 79], ["Sergej Milinković-Savić", "MID", 81], ["Sergio Busquets", "MID", 77], ["Lukas Lerager", "MID", 73], ["Viktor Claesson", "MID", 73], ["Daniel Wass", "MID", 71], ["Nicolai Vallys", "MID", 73], ["Magnus Mattsson", "MID", 73], ["Mikkel Duelund", "MID", 71], ["Kristian Arnstad", "MID", 70], ["Iliman Ndiaye", "LW", 80], ["Jamie Gittens", "LW", 80], ["Jadon Sancho", "LW", 79], ["Harvey Barnes", "LW", 79], ["Dwight McNeil", "LW", 78], ["Kenan Yıldız", "LW", 83], ["Mattia Zaccagni", "LW", 81], ["Chris Führich", "LW", 79], ["Malick Fofana", "LW", 79], ["Aral Şimşir", "LW", 75], ["Elias Achouri", "LW", 72], ["Mohamed Elyounoussi", "LW", 73], ["Jacob Bruun Larsen", "LW", 75], ["Anthony Elanga", "RW", 80], ["Callum Hudson-Odoi", "RW", 79], ["Justin Kluivert", "RW", 80], ["Ismaïla Sarr", "RW", 79], ["Jacob Murphy", "RW", 79], ["Antony", "RW", 79], ["Iñaki Williams", "RW", 81], ["Yeremy Pino", "RW", 80], ["Paulo Dybala", "RW", 82], ["Riccardo Orsolini", "RW", 80], ["Matteo Politano", "RW", 81], ["Matías Soulé", "RW", 80], ["Karim Adeyemi", "RW", 80], ["Jonas Hofmann", "RW", 79], ["Ritsu Dōan", "RW", 79], ["Mason Greenwood", "RW", 82], ["Maghnes Akliouche", "RW", 80], ["Francisco Trincão", "RW", 82], ["Geovany Quenda", "RW", 78], ["Ángel Di María", "RW", 82], ["Pepê", "RW", 79], ["Johan Bakayoko", "RW", 80], ["Malcom", "RW", 80], ["Dario Osorio", "RW", 74], ["Tobias Bech", "RW", 70], ["Anders Dreyer", "RW", 77], ["Albert Gudmundsson", "RW", 81], ["Raúl Jiménez", "ST", 79], ["Evanilson", "ST", 79], ["Yoane Wissa", "ST", 82], ["Liam Delap", "ST", 79], ["Danny Welbeck", "ST", 78], ["Jørgen Strand Larsen", "ST", 80], ["Dominic Calvert-Lewin", "ST", 78], ["Jhon Durán", "ST", 79], ["Ferran Torres", "ST", 82], ["Gerard Moreno", "ST", 80], ["Iago Aspas", "ST", 80], ["Ante Budimir", "ST", 79], ["Endrick", "ST", 79], ["Moise Kean", "ST", 83], ["Artem Dovbyk", "ST", 81], ["Valentín Castellanos", "ST", 81], ["Tammy Abraham", "ST", 79], ["Deniz Undav", "ST", 81], ["Jonathan Burkardt", "ST", 80], ["Maximilian Beier", "ST", 80], ["Tim Kleindienst", "ST", 79], ["Mohamed Amoura", "ST", 80], ["Amine Gouiri", "ST", 80], ["Folarin Balogun", "ST", 79], ["Vangelis Pavlidis", "ST", 81], ["Samu Aghehowa", "ST", 80], ["Brian Brobbey", "ST", 79], ["Aleksandar Mitrović", "ST", 80], ["Ivan Toney", "ST", 82], ["Luis Suárez", "ST", 78], ["Jordan Larsson", "ST", 73], ["Franculino", "ST", 74], ["Adam Buksa", "ST", 72], ["Patrick Mortensen", "ST", 70], ["Mathias Kvistgaarden", "ST", 74], ["Christian Gytkjær", "ST", 72]];
+REAL3.forEach(x=>{if(!REAL.some(y=>y[0]===x[0]))REAL.push(x)});
+const FN=['Mads','Jonas','Emil','Oliver','Lucas','Frederik','Magnus','Mathias','Noah','Victor','Kasper','Rasmus','Anders','Simon','Mikkel','Tobias','Jakob','Andreas','William','Alfred','Malthe','Sebastian','Nikolaj','Christian','Oscar','Elias','Carl','Theo','Valdemar','Johan'];
+const LN=['Jensen','Nielsen','Hansen','Pedersen','Andersen','Christensen','Larsen','Sørensen','Rasmussen','Jørgensen','Petersen','Madsen','Kristensen','Olsen','Thomsen','Poulsen','Johansen','Knudsen','Mortensen','Møller','Holm','Lund','Bach','Dahl','Krogh','Vestergaard','Skov','Friis','Brandt','Kjær'];
+const BOTS=[
+{n:'Amatør',r:58,club:'Grøftekanten BK',col:'#64748b',txt:'#fff',away:'#e2e8f0',atxt:'#111',p:0.72,lp:0.12,tk:0.4,pen:0.72,press:0.05,tkSec:12,def:0,gk:1,mult:1},
+{n:'Semi-pro',r:67,club:'Vestegnens IF',col:'#0ea5e9',txt:'#fff',away:'#f8fafc',atxt:'#0369a1',p:0.8,lp:0.11,tk:0.5,pen:0.78,press:0.1,tkSec:10,def:0,gk:0.9,mult:1.5},
+{n:'Pro',r:75,club:'FC Havnefronten',col:'#f97316',txt:'#0a0f0c',away:'#1e293b',atxt:'#fff',p:0.87,lp:0.1,tk:0.6,pen:0.84,press:0.18,tkSec:8,def:0,gk:0.8,mult:2.2},
+{n:'Verdensklasse',r:83,club:'Real Stjerneskud',col:'#7c3aed',txt:'#fff',away:'#f8fafc',atxt:'#5b21b6',p:0.92,lp:0.09,tk:0.7,pen:0.9,press:0.26,tkSec:6,def:1,gk:0.7,mult:3},
+{n:'Legendarisk',r:90,club:'Galácticos XI',col:'#e11d48',txt:'#fff',away:'#fef3c7',atxt:'#9f1239',p:0.96,lp:0.08,tk:0.8,pen:0.94,press:0.35,tkSec:5,def:1,gk:0.6,mult:4}];
+const KITS=[['#22c55e','#0a0f0c','Grøn'],['#f8fafc','#111111','Hvid'],['#111827','#ffffff','Sort'],['#f59e0b','#0a0f0c','Orange'],['#ec4899','#ffffff','Pink'],['#14b8a6','#0a0f0c','Turkis'],['#2563eb','#ffffff','Blå'],['#dc2626','#ffffff','Rød']];
+function srng(seed){let s=(seed>>>0)||1;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
+function fict(r,pos,rng){return {id:'f'+Math.floor(rng()*2e9).toString(36),name:FN[Math.floor(rng()*FN.length)]+' '+LN[Math.floor(rng()*LN.length)],pos,rating:r}}
+const value=r=>Math.max(20,Math.round(60*Math.pow(1.2,r-55)/10)*10);
+const sellValue=r=>Math.max(10,Math.round(value(r)*0.6/10)*10);
+const rtCol=(r,icon)=>icon?'#f472b6':r>=85?'#c4b5fd':r>=75?'#facc15':r>=65?'#cbd5e1':'#d6a06b';
+const effR=(p,slot)=>{const g=POSG[slot];if(p.pos===g)return p.rating;if((g==='LW'&&p.pos==='RW')||(g==='RW'&&p.pos==='LW'))return p.rating-3;return p.rating-10};
+function newCareer(){const rng=srng(Date.now()%2e9);const mk=(r,p)=>fict(r,p,rng);
+  const pl=[mk(55,'GK'),mk(56,'DEF'),mk(54,'DEF'),mk(55,'MID'),mk(57,'MID'),mk(54,'LW'),mk(55,'RW'),mk(56,'ST'),mk(52,'DEF'),mk(53,'MID'),mk(52,'ST')];
+  const lineup={};SLOTS.forEach((s,i)=>lineup[s]=pl[i].id);
+  return {v:1,name:'Mit Hold',kit:0,coins:500,players:pl,lineup,stats:{p:0,w:0,d:0,l:0},seed:Math.floor(Math.random()*2e9),bot:0,updated:Date.now()}}
+let CAR=null,CARDB=null,carSaving=false,carDirty=false;
+try{const s=localStorage.getItem('tf_career');if(s)CAR=JSON.parse(s)}catch(e){}
+function saveCareer(){if(!CAR)return;CAR.updated=Date.now();try{localStorage.setItem('tf_career',JSON.stringify(CAR))}catch(e){}carDirty=true;flushCar()}
+function flushCar(){if(!CARDB||carSaving||!carDirty)return;carSaving=true;carDirty=false;CARDB.set({career:JSON.stringify(CAR),updated:CAR.updated}).catch(()=>{}).finally(()=>{carSaving=false;flushCar()})}
+(async()=>{try{
+  if(!window.claude||!window.claude.use)return;
+  const user=await window.claude.use('user');const db=await window.claude.use('db');if(!db||!user)return;
+  const uid=await user.id();if(!uid)return;
+  const ref=db.doc('data/users/'+uid+'/career');const snap=await ref.get();CARDB=ref;
+  if(snap.exists){const d=snap.data()||{};let remote=null;try{remote=JSON.parse(d.career)}catch(e){}
+    if(remote&&(!CAR||(remote.updated||0)>(CAR.updated||0))){CAR=remote;try{localStorage.setItem('tf_career',JSON.stringify(CAR))}catch(e){}if(!$('modeC').classList.contains('hidden'))renderHub()}
+    else if(CAR){carDirty=true;flushCar()}}
+  else if(CAR){carDirty=true;flushCar()}
+}catch(e){}})();
+const ownedP=id=>CAR.players.find(p=>p.id===id);
+function teamRating(){return Math.round(SLOTS.reduce((s,sl)=>{const p=ownedP(CAR.lineup[sl]);return s+(p?effR(p,sl):40)},0)/8)}
+function marketList(){
+  const rng=srng(CAR.seed);const owned=new Set(CAR.players.map(p=>p.id));const list=[];
+  const poss=['GK','DEF','DEF','MID','MID','LW','RW','ST'];
+  for(let i=0;i<16;i++){const r=56+Math.floor(rng()*22);list.push(fict(r,poss[Math.floor(rng()*poss.length)],rng))}
+  const pickR=(arr,n)=>{const a=arr.slice();const out=[];for(let i=0;i<n&&a.length;i++)out.push(a.splice(Math.floor(rng()*a.length),1)[0]);return out};
+  REAL.forEach(x=>list.push({id:'r'+x[0],name:x[0],pos:x[1],rating:x[2],icon:x[3]?1:undefined}));
+  return list.filter(p=>!owned.has(p.id)).sort((a,b)=>b.rating-a.rating);
+}
+function potTxt(p){if(!p.pot)return'';const lo=Math.max(p.rating,p.pot-3),hi=p.pot+3;return p.rating>=p.pot?' · Fuldt udviklet':` · Talent, potentiale ${lo}-${hi}`}
+function prow(p,right){return `<div class="prow"><div class="rt" style="background:${rtCol(p.rating,p.icon)}">${p.rating}</div><div><div style="font-weight:600">${p.name}${p.icon?' <span class="pmeta">· Ikon</span>':''}</div><div class="pmeta">${POSL[p.pos]}${p.age?' · '+p.age+' år':''}${potTxt(p)}</div></div>${right}</div>`}
+let squadSel=null,hubView='hub',mktFilter='ALL',mktSearch='',mktSort='d',mktAff=false,resetArm=false;
+function renderHub(view){
+  if(view)hubView=view;
+  if(!CAR){CAR=newCareer();saveCareer()}
+  const el=$('modeC');const tr=teamRating();
+  const top=`<div class="hubtop"><div style="flex:1;min-width:180px"><input type="text" id="cname" value="${CAR.name.replace(/"/g,'&quot;')}" maxlength="18" style="font-family:Oswald,sans-serif;font-size:22px"></div><div class="coins">${CAR.coins.toLocaleString('da-DK')} mønter</div><div class="rt" style="background:${rtCol(tr)};width:56px">${tr}</div></div>`;
+  if(hubView==='hub'){
+    const s=CAR.stats;const st=CAR.settings||(CAR.settings={len:4,tk:15});const L=CAR.league,C=CAR.cup;
+    el.innerHTML=top+`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><div class="stat"><b>${s.p}</b>Kampe</div><div class="stat"><b>${s.w}</b>Sejre</div><div class="stat"><b>${s.d}</b>Uafgjort</div><div class="stat"><b>${s.l}</b>Nederlag</div><div class="stat"><b>${(CAR.trophies||[]).length}</b>Trofæer</div></div>
+    <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap"><button class="btn ghost" id="goSquad" style="flex:1">Opstilling og trup</button><button class="btn ghost" id="goMarket" style="flex:1">Transfermarked</button><button class="btn ghost" id="goAcad" style="flex:1">Ungdomsakademi${(CAR.academy||[]).length?` (${CAR.academy.length})`:''}</button></div>
+    <div class="card2"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-family:Oswald,sans-serif;font-size:20px">Liga</div><div class="pmeta">${L?`${DIVS[L.div].n} · runde ${Math.min(L.round+1,L.fx.length)} af ${L.fx.length} · nr. ${leaguePos()} i tabellen`:`Start en sæson i ${DIVS[CAR.div||0].n}`}</div></div><button class="btn" id="goLeague">${L?'Til ligaen':'Start sæson'}</button></div></div>
+    <div class="card2"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-family:Oswald,sans-serif;font-size:20px">Pokal</div><div class="pmeta">${C?`${CUPS[C.tier].n} · ${CUPR[C.round]}`:'Knockout-turnering med 8 hold. Vind tre kampe og løft pokalen.'}</div></div><button class="btn" id="goCup">${C?'Til pokalen':'Vælg pokal'}</button></div></div>
+    <div class="card2"><div style="font-family:Oswald,sans-serif;font-size:20px">Venskabskamp</div>
+    <select id="cbot" style="margin-top:8px">${BOTS.map((b,i)=>`<option value="${i}" ${i===(CAR.bot||0)?'selected':''}>${b.n}: ${b.club}, rating ${b.r} (mønter ×${b.mult})</option>`).join('')}</select>
+    <div style="margin-top:10px"><button class="btn ghost" id="cplay">Spil venskabskamp</button></div></div>
+    <label class="f">Trøjefarve</label><select id="ckit">${KITS.map((k,i)=>`<option value="${i}" ${i===CAR.kit?'selected':''}>${k[2]}</option>`).join('')}</select>
+    <label class="f">Kamplængde</label><select id="clen"><option value="6" ${st.len===6?'selected':''}>Kort kamp</option><option value="4" ${st.len===4?'selected':''}>Normal kamp</option><option value="3" ${st.len===3?'selected':''}>Lang kamp</option></select>
+    <label class="f">Tackling</label><select id="ctk">${[[10,'Efter 10 sekunder'],[15,'Efter 15 sekunder'],[20,'Efter 20 sekunder'],[0,'Ingen tackling']].map(o=>`<option value="${o[0]}" ${st.tk===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+    ${(CAR.trophies||[]).length?`<label class="f">Trofæskab</label><div class="pmeta" style="font-size:14px;line-height:1.8">${CAR.trophies.map(t=>'🏆 '+t).join('<br>')}</div>`:''}
+    <div style="margin-top:16px"><button class="btn ghost sm" id="creset">${resetArm?'Klik igen for at slette karrieren':'Start forfra'}</button></div>
+    <p class="pmeta" style="margin-top:12px;line-height:1.6">Du får mønter for hver kamp: mere for sejr, mål og rigtige svar, og mere jo bedre modstanderen er. Spillere med høj rating giver lettere spørgsmål og større grønt felt, når de skyder.</p>`;
+    $('goSquad').onclick=()=>renderHub('squad');$('goMarket').onclick=()=>renderHub('market');$('goAcad').onclick=()=>renderHub('academy');
+    $('goLeague').onclick=()=>{if(!CAR.league){CAR.league=newLeague(CAR.div||0);saveCareer()}renderHub('league')};
+    $('goCup').onclick=()=>renderHub('cup');
+    $('ckit').onchange=e=>{CAR.kit=+e.target.value;saveCareer()};
+    $('cbot').onchange=e=>{CAR.bot=+e.target.value;saveCareer()};
+    $('clen').onchange=e=>{CAR.settings.len=+e.target.value;saveCareer()};
+    $('ctk').onchange=e=>{CAR.settings.tk=+e.target.value;saveCareer()};
+    $('cplay').onclick=()=>startCareerMatch(BOTS[CAR.bot||0],'friendly');
+    $('creset').onclick=()=>{if(!resetArm){resetArm=true;renderHub();return}resetArm=false;CAR=newCareer();saveCareer();renderHub()};
+  } else if(hubView==='league'){
+    const L=CAR.league;if(!L){renderHub('hub');return}
+    const opp=L.round<L.fx.length?L.teams[nextOpp()]:null;
+    el.innerHTML=top+`<button class="btn ghost sm" id="back">← Tilbage</button>
+    <div style="font-family:Oswald,sans-serif;font-size:26px;margin-top:10px">${DIVS[L.div].n}</div>
+    <div class="pmeta">Sæson ${L.season||1} · runde ${Math.min(L.round+1,L.fx.length)} af ${L.fx.length} · ${L.div<DIVS.length-1?'Top 2 rykker op':'Vind ligaen og bliv mester'}${L.div>0?' · nr. 8 rykker ned':''} · Alle hold mødes ude og hjemme, og kampe kan ende uafgjort</div>
+    ${leagueTable()}
+    ${opp?`<div class="card2" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div class="pmeta">Næste kamp</div><div style="font-weight:600;font-size:17px">${CAR.name} mod ${opp.name}</div><div class="pmeta">Modstanderens rating: ${opp.r}</div></div><button class="btn" id="lplay">Spil ligakamp</button></div>`:''}
+    ${L.last?`<div class="pmeta" style="margin-top:10px">Sidste runde: ${L.last}</div>`:''}`;
+    $('back').onclick=()=>renderHub('hub');
+    if($('lplay'))$('lplay').onclick=()=>startCareerMatch(botFor(opp),'league');
+  } else if(hubView==='cup'){
+    const C=CAR.cup;
+    if(!C){
+      el.innerHTML=top+`<button class="btn ghost sm" id="back">← Tilbage</button><label class="f">Vælg en pokalturnering</label>
+      <div class="plist">${CUPS.map((c,i)=>`<div class="prow" style="grid-template-columns:1fr auto auto"><div><div style="font-weight:600">${c.n}</div><div class="pmeta">Modstandere fra rating ${c.base} til ${c.base+8} · præmie ${c.prize.toLocaleString('da-DK')} mønter</div></div><div class="pmeta" style="text-align:right">Indskud<br>${c.fee} mønter</div><button class="btn sm" data-cup="${i}" ${CAR.coins<c.fee?'disabled':''}>Tilmeld</button></div>`).join('')}</div>`;
+      $('back').onclick=()=>renderHub('hub');
+      el.querySelectorAll('[data-cup]').forEach(b=>b.onclick=()=>{const c=CUPS[+b.dataset.cup];if(CAR.coins<c.fee)return;CAR.coins-=c.fee;CAR.cup=newCup(+b.dataset.cup);saveCareer();renderHub('cup')});
+    } else {
+      const cp=CUPS[C.tier];
+      el.innerHTML=top+`<button class="btn ghost sm" id="back">← Tilbage</button>
+      <div style="font-family:Oswald,sans-serif;font-size:26px;margin-top:10px">${cp.n}</div><div class="pmeta">Præmie til vinderen: ${cp.prize.toLocaleString('da-DK')} mønter og et trofæ</div>
+      <div class="plist">${C.opps.map((o,i)=>`<div class="prow" style="grid-template-columns:110px 1fr auto"><div class="pmeta">${CUPR[i]}</div><div style="font-weight:600">${o.name} <span class="pmeta">· rating ${o.r}</span></div><div class="pmeta">${i<C.round?'Vundet':i===C.round?'Næste kamp':''}</div></div>`).join('')}</div>
+      <div style="margin-top:12px"><button class="btn" id="cupplay">Spil ${CUPR[C.round].toLowerCase()}</button></div>
+      <p class="pmeta" style="margin-top:8px">Uafgjort afgøres på straffespark. Taber du, er du ude.</p>`;
+      $('back').onclick=()=>renderHub('hub');
+      $('cupplay').onclick=()=>startCareerMatch(botFor(C.opps[C.round]),'cup');
+    }
+  } else if(hubView==='squad'){
+    const inL=new Set(Object.values(CAR.lineup));
+    const LP={"GK": [50, 90], "CBL": [30, 72], "CBR": [70, 72], "CML": [33, 49], "CMR": [67, 49], "LW": [17, 22], "RW": [83, 22], "ST": [50, 13]};
+    const sel=squadSel;
+    el.innerHTML=top+`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" id="back">← Tilbage</button><button class="btn ghost sm" id="autobest">Stil bedste hold op automatisk</button></div>
+    <div class="pmeta" style="margin-top:10px">Klik på en position på banen og vælg derefter, hvilken spiller der skal stå der.</div>
+    <div class="lpitch"><div class="lbox" style="bottom:0;border-bottom:none"></div><div class="lbox" style="top:0;border-top:none"></div>
+    ${SLOTS.map(sl=>{const p=ownedP(CAR.lineup[sl]);const er=p?effR(p,sl):0;const off=p&&er!==p.rating;return `<button class="lcard ${sel===sl?'sel':''}" data-ls="${sl}" style="left:${LP[sl][0]}%;top:${LP[sl][1]}%"><div class="rt" style="background:${rtCol(er,p&&p.icon)}">${er}</div><div class="nm">${p?p.name:'Tom'}</div><div class="ps ${off?'warn':''}">${SLOTL[sl]}${off?' (forkert position)':''}</div></button>`}).join('')}
+    </div>
+    <div style="text-align:center;margin-bottom:6px"><span class="pmeta">Holdets rating: </span><b style="font-family:Oswald,sans-serif;font-size:20px">${tr}</b></div>
+    ${sel?`<label class="f">Vælg spiller til ${SLOTL[sel]}</label><div class="plist">${CAR.players.slice().sort((a,b)=>effR(b,sel)-effR(a,sel)).map(p=>{const where=SLOTS.find(x=>CAR.lineup[x]===p.id);const er=effR(p,sel);return prow({...p,rating:er},`<div class="pmeta">${where?(where===sel?'Står her nu':'Starter som '+SLOTL[where].toLowerCase()):'Reserve'}${er!==p.rating?`<br><span class="warn" style="color:#fca5a5">${POSL[p.pos]} (${p.rating})</span>`:''}</div><button class="btn sm" data-pick="${p.id}" ${where===sel?'disabled':''}>Sæt ind</button>`)}).join('')}</div>`:''}
+    <p class="pmeta" style="margin-top:10px">En spiller på en forkert position mister 10 i rating (3, hvis det er den anden kant).</p>
+    <label class="f">Hele truppen (${CAR.players.length} spillere)</label>
+    <div class="plist">${CAR.players.slice().sort((a,b)=>b.rating-a.rating).map(p=>prow(p,`<div class="pmeta">${inL.has(p.id)?'Starter':'Reserve'}</div><button class="btn ghost sm" data-sell="${p.id}" ${inL.has(p.id)?'disabled':''}>Sælg ${sellValue(p.rating).toLocaleString('da-DK')}</button>`)).join('')}</div>`;
+    $('back').onclick=()=>{squadSel=null;renderHub('hub')};
+    el.querySelectorAll('[data-ls]').forEach(b=>b.onclick=()=>{squadSel=squadSel===b.dataset.ls?null:b.dataset.ls;renderHub()});
+    el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const id=b.dataset.pick,sl=squadSel;const other=SLOTS.find(x=>x!==sl&&CAR.lineup[x]===id);if(other)CAR.lineup[other]=CAR.lineup[sl];CAR.lineup[sl]=id;squadSel=null;saveCareer();renderHub()});
+    $('autobest').onclick=()=>{
+      const used=new Set();const order=['GK','ST','LW','RW','CML','CMR','CBL','CBR'];const nl={};
+      order.forEach(sl=>{const best=CAR.players.filter(p=>!used.has(p.id)).sort((a,b)=>effR(b,sl)-effR(a,sl))[0];if(best){nl[sl]=best.id;used.add(best.id)}});
+      if(SLOTS.every(s=>nl[s])){CAR.lineup=nl;saveCareer()}squadSel=null;renderHub();
+    };
+    el.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{const p=ownedP(b.dataset.sell);if(!p||inL.has(p.id))return;CAR.coins+=sellValue(p.rating);CAR.players=CAR.players.filter(x=>x.id!==p.id);saveCareer();renderHub()});
+  } else if(hubView==='academy'){
+    if(!CAR.academy)CAR.academy=[];
+    const ac=CAR.academy;const full=ac.length>=5;const sqFull=CAR.players.length>=22;
+    el.innerHTML=top+`<button class="btn ghost sm" id="back">← Tilbage</button>
+    <label class="f">Send en spejder ud (plads til ${5-ac.length} talenter mere)</label>
+    <div class="plist">${SCOUTS.map((s,i)=>`<div class="prow" style="grid-template-columns:1fr auto auto"><div><div style="font-weight:600">${s.n}</div><div class="pmeta">Finder et talent med potentiale ca. ${s.pot[0]}-${s.pot[1]}</div></div><div class="pmeta" style="text-align:right">${s.cost.toLocaleString('da-DK')}<br>mønter</div><button class="btn sm" data-scout="${i}" ${CAR.coins<s.cost||full?'disabled':''}>Send ud</button></div>`).join('')}</div>
+    <div id="scoutmsg" class="pmeta" style="margin-top:8px;min-height:18px"></div>
+    <label class="f">Akademiets talenter</label>
+    <div class="plist">${ac.length?ac.slice().sort((a,b)=>b.pot-a.pot).map(p=>prow(p,`<button class="btn ghost sm" data-rel="${p.id}">Frigiv</button><button class="btn sm" data-prom="${p.id}" ${sqFull?'disabled':''}>Ryk op</button>`)).join(''):'<p class="pmeta">Akademiet er tomt. Send en spejder ud for at finde dit første talent.</p>'}</div>
+    <p class="pmeta" style="margin-top:12px;line-height:1.6">Talenterne bliver bedre efter hver kamp, du spiller, indtil de når deres potentiale. Jo større afstand der er op til potentialet, jo hurtigere udvikler de sig. Rykker du et talent op på førsteholdet, fortsætter udviklingen, og det går hurtigst, når han er med i startopstillingen.${sqFull?' Truppen er fuld (22), så sælg nogen først for at rykke et talent op.':''}</p>`;
+    $('back').onclick=()=>renderHub('hub');
+    el.querySelectorAll('[data-scout]').forEach(b=>b.onclick=()=>{const s=SCOUTS[+b.dataset.scout];if(CAR.coins<s.cost||CAR.academy.length>=5)return;CAR.coins-=s.cost;const p=scoutPlayer(s);CAR.academy.push(p);saveCareer();renderHub();$('scoutmsg').innerHTML=`Spejderen har fundet <b>${p.name}</b> (${p.age} år, ${POSL[p.pos].toLowerCase()}), rating ${p.rating}.`});
+    el.querySelectorAll('[data-rel]').forEach(b=>b.onclick=()=>{CAR.academy=CAR.academy.filter(x=>x.id!==b.dataset.rel);saveCareer();renderHub()});
+    el.querySelectorAll('[data-prom]').forEach(b=>b.onclick=()=>{if(CAR.players.length>=22)return;const p=CAR.academy.find(x=>x.id===b.dataset.prom);if(!p)return;CAR.academy=CAR.academy.filter(x=>x.id!==p.id);CAR.players.push(p);saveCareer();renderHub()});
+  } else {
+    const full=CAR.players.length>=22;
+    el.innerHTML=top+`<button class="btn ghost sm" id="back">← Tilbage</button>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <input type="text" id="msearch" placeholder="Søg efter spiller" value="${mktSearch.replace(/"/g,'&quot;')}" style="flex:1;min-width:160px">
+      <select id="mf" style="max-width:190px">${['ALL','GK','DEF','MID','LW','RW','ST'].map(k=>`<option value="${k}" ${k===mktFilter?'selected':''}>${k==='ALL'?'Alle positioner':POSL[k]}</option>`).join('')}</select>
+      <select id="msort" style="max-width:170px"><option value="d" ${mktSort==='d'?'selected':''}>Højeste rating</option><option value="a" ${mktSort==='a'?'selected':''}>Billigste først</option></select>
+    </div>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" id="maff" ${mktAff?'checked':''}> Vis kun spillere, jeg har råd til</label>
+    <div class="pmeta" style="margin-top:6px">${full?'Truppen er fuld (22). Sælg nogen først. ':''}Ukendte talenter skifter efter hver kamp. Ratingerne er spillets egne vurderinger.</div>
+    <div id="mcount" class="pmeta" style="margin-top:8px"></div>
+    <div class="plist" id="mlist"></div>`;
+    const draw=()=>{
+      const q=mktSearch.trim().toLowerCase();
+      let list=marketList().filter(p=>(mktFilter==='ALL'||p.pos===mktFilter)&&(!q||p.name.toLowerCase().includes(q))&&(!mktAff||value(p.rating)<=CAR.coins));
+      if(mktSort==='a')list.sort((a,b)=>a.rating-b.rating);
+      const shown=list.slice(0,80);
+      $('mcount').textContent=`Viser ${shown.length} af ${list.length} spillere`;
+      $('mlist').innerHTML=shown.map(p=>prow(p,`<div class="pmeta" style="text-align:right">${value(p.rating).toLocaleString('da-DK')}<br>mønter</div><button class="btn sm" data-buy="${p.id}" ${CAR.coins<value(p.rating)||full?'disabled':''}>Køb</button>`)).join('')||'<p class="pmeta">Ingen spillere matcher.</p>';
+      $('mlist').querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const p=marketList().find(x=>x.id===b.dataset.buy);if(!p||CAR.coins<value(p.rating)||CAR.players.length>=22)return;CAR.coins-=value(p.rating);CAR.players.push({id:p.id,name:p.name,pos:p.pos,rating:p.rating,icon:p.icon});saveCareer();renderHub()});
+    };
+    draw();
+    $('back').onclick=()=>renderHub('hub');
+    $('mf').onchange=e=>{mktFilter=e.target.value;draw()};
+    $('msort').onchange=e=>{mktSort=e.target.value;draw()};
+    $('maff').onchange=e=>{mktAff=e.target.checked;draw()};
+    $('msearch').oninput=e=>{mktSearch=e.target.value;draw()};
+  }
+  const cn=$('cname');if(cn)cn.onchange=()=>{CAR.name=cn.value.trim()||'Mit Hold';saveCareer()};
+}
+const SCOUTS=[{n:'Lokal spejder',cost:150,r:[45,53],pot:[62,76]},{n:'National spejder',cost:450,r:[49,57],pot:[70,84]},{n:'International spejder',cost:1200,r:[53,61],pot:[78,92]}];
+function scoutPlayer(s){const rng=srng(Math.floor(Math.random()*2e9));const poss=['GK','DEF','DEF','MID','MID','LW','RW','ST'];
+  const f=fict(s.r[0]+Math.floor(rng()*(s.r[1]-s.r[0]+1)),poss[Math.floor(rng()*poss.length)],rng);
+  f.pot=s.pot[0]+Math.floor(rng()*(s.pot[1]-s.pot[0]+1));f.age=15+Math.floor(rng()*3);f.id='y'+f.id.slice(1);return f}
+function growPlayers(){
+  const out=[];const inL=new Set(Object.values(CAR.lineup));
+  const grow=(p,where)=>{if(!p.pot||p.rating>=p.pot)return;const gap=p.pot-p.rating;let inc=gap>12?(Math.random()<0.6?2:1):(Math.random()<0.75?1:0);
+    if(where==='bench'&&Math.random()<0.5)inc=0;if(where==='start'&&gap>6&&Math.random()<0.35)inc++;
+    inc=Math.min(inc,gap);if(inc>0){p.rating+=inc;out.push(`${p.name} +${inc} (nu ${p.rating})`)}};
+  (CAR.academy||[]).forEach(p=>grow(p,'acad'));
+  CAR.players.forEach(p=>grow(p,inL.has(p.id)?'start':'bench'));
+  return out;
+}
+const DIVS=[{n:'Danmarksserien',r:[52,60],prize:200},{n:'2. division',r:[60,68],prize:400},{n:'1. division',r:[68,76],prize:700},{n:'Superligaen',r:[76,86],prize:1200}];
+const CUPS=[{n:'Lokalpokalen',base:58,prize:500,fee:0},{n:'Landspokalen',base:68,prize:1200,fee:100},{n:'Mesterpokalen',base:78,prize:3000,fee:300}];
+const CUPR=['Kvartfinale','Semifinale','Finale'];
+const TPRE=['FC','BK','IF','SK','AC','Boldklubben','B.'];
+const TPL=['Nordby','Sønderhavn','Vestkysten','Østhavn','Skovlunde','Bakkedal','Fjordby','Strandvig','Engholm','Kløverdal','Egebjerg','Lyngdal','Havnebyen','Bøgely','Søndermark','Granly','Mosebakken','Ravnsholt','Solvang','Ulvedal'];
+const TCOL=[['#dc2626','#fff'],['#2563eb','#fff'],['#16a34a','#fff'],['#f59e0b','#111'],['#7c3aed','#fff'],['#0f172a','#fff'],['#f8fafc','#111'],['#0891b2','#fff'],['#be185d','#fff'],['#65a30d','#111']];
+function teamGen(r,used){let n;do{n=(Math.random()<0.5?TPRE[Math.floor(Math.random()*TPRE.length)]+' ':'')+TPL[Math.floor(Math.random()*TPL.length)]+(Math.random()<0.4?' '+['IF','BK','FC'][Math.floor(Math.random()*3)]:'')}while(used.has(n));used.add(n);const c=TCOL[Math.floor(Math.random()*TCOL.length)];return {name:n,r,col:c[0],txt:c[1]}}
+function botFor(t){let i=0;while(i<BOTS.length-1&&BOTS[i+1].r<=t.r)i++;const a=BOTS[i],b=BOTS[Math.min(i+1,BOTS.length-1)];const k=b.r===a.r?0:clamp((t.r-a.r)/(b.r-a.r),0,1);const I=x=>a[x]+(b[x]-a[x])*k;
+  return {n:t.name,r:t.r,club:t.name,col:t.col,txt:t.txt,away:t.col==='#f8fafc'?'#1e293b':'#f8fafc',atxt:t.col==='#f8fafc'?'#fff':'#111',p:I('p'),lp:I('lp'),tk:I('tk'),pen:I('pen'),press:I('press'),tkSec:Math.round(I('tkSec')),def:t.r>=82?1:0,gk:I('gk'),mult:Math.round(I('mult')*10)/10}}
+function rrRounds(n){const ids=[...Array(n).keys()];const rounds=[];for(let r=0;r<n-1;r++){const pr=[];for(let i=0;i<n/2;i++)pr.push([ids[i],ids[n-1-i]]);rounds.push(pr);ids.splice(1,0,ids.pop())}return rounds}
+function newLeague(div,season){const d=DIVS[div];const used=new Set([CAR.name]);const teams=[{name:CAR.name,me:1,r:0}];
+  for(let i=0;i<7;i++){const r=d.r[0]+Math.round(i*(d.r[1]-d.r[0])/6)+Math.round(Math.random()*2-1);teams.push(teamGen(r,used))}
+  teams.forEach(t=>Object.assign(t,{P:0,W:0,D:0,L:0,GF:0,GA:0,Pts:0}));
+  const rr=rrRounds(8);return {div,season:season||1,round:0,teams,fx:rr.concat(rr.map(rd=>rd.map(([a,b])=>[b,a]))),last:''}}
+function nextOpp(){const L=CAR.league;const pr=L.fx[L.round].find(p=>p.includes(0));return pr[0]===0?pr[1]:pr[0]}
+function poisson(l){let k=0,p=1,e=Math.exp(-l);do{k++;p*=Math.random()}while(p>e);return k-1}
+function simScore(ra,rb){const la=1.35*Math.exp((ra-rb)/14),lb=1.35*Math.exp((rb-ra)/14);return [Math.min(poisson(la),7),Math.min(poisson(lb),7)]}
+function addRes(t,gf,ga){t.P++;t.GF+=gf;t.GA+=ga;if(gf>ga){t.W++;t.Pts+=3}else if(gf===ga){t.D++;t.Pts+=1}else t.L++}
+function sortedTable(){return CAR.league.teams.map((t,i)=>({...t,i})).sort((a,b)=>b.Pts-a.Pts||(b.GF-b.GA)-(a.GF-a.GA)||b.GF-a.GF)}
+function leaguePos(){return sortedTable().findIndex(t=>t.me)+1}
+function leagueTable(){const L=CAR.league;const tb=sortedTable();return `<table class="ltab"><tr><th>#</th><th>Hold</th><th>K</th><th>V</th><th>U</th><th>T</th><th>Mål</th><th>P</th></tr>${tb.map((t,i)=>`<tr class="${t.me?'me':''} ${i<2&&L.div<DIVS.length-1?'up':''} ${i===7&&L.div>0?'down':''}"><td>${i+1}</td><td>${t.me?CAR.name:t.name}${t.me?'':` <span class="pmeta">${t.r}</span>`}</td><td>${t.P}</td><td>${t.W}</td><td>${t.D}</td><td>${t.L}</td><td>${t.GF}-${t.GA}</td><td><b>${t.Pts}</b></td></tr>`).join('')}</table>`}
+function leagueAfter(){
+  const L=CAR.league;if(!L)return'';const oi=nextOpp();const me=L.teams[0],op=L.teams[oi];
+  addRes(me,S.score[0],S.score[1]);addRes(op,S.score[1],S.score[0]);
+  const others=[];L.fx[L.round].forEach(([a,b])=>{if(a===0||b===0)return;const [x,y]=simScore(L.teams[a].r,L.teams[b].r);addRes(L.teams[a],x,y);addRes(L.teams[b],y,x);others.push(`${L.teams[a].name} ${x}-${y} ${L.teams[b].name}`)});
+  L.last=others.join(' · ');L.round++;
+  let html=`<div class="card2"><div class="pmeta">Andre resultater i runden</div><div style="font-size:13px;line-height:1.7">${others.join('<br>')}</div><div class="pmeta" style="margin-top:6px">Du ligger nr. ${leaguePos()} i ${DIVS[L.div].n}.</div></div>`;
+  if(L.round>=L.fx.length){
+    const pos=leaguePos();const d=DIVS[L.div];const f=pos===1?1:pos===2?0.6:pos<=4?0.3:0.1;const prize=Math.round(d.prize*f/10)*10;CAR.coins+=prize;
+    let msg=`Sæsonen er slut! Du blev nr. ${pos} i ${d.n} og får ${prize} mønter.`;let nd=L.div;
+    if(pos===1){CAR.trophies=CAR.trophies||[];CAR.trophies.push(`${d.n}, sæson ${L.season}`);msg+=' Du vandt ligaen! 🏆'}
+    if(pos<=2&&L.div<DIVS.length-1){nd++;msg+=` Du rykker op i ${DIVS[nd].n}!`}else if(pos===8&&L.div>0){nd--;msg+=` Du rykker ned i ${DIVS[nd].n}.`}
+    CAR.div=nd;CAR.league=newLeague(nd,(L.season||1)+1);
+    html+=`<div class="card2" style="border-color:#facc15"><div style="font-family:Oswald,sans-serif;font-size:20px;color:#facc15">${msg}</div><div class="pmeta">En ny sæson er klar i ${DIVS[nd].n}.</div></div>`;
+  }
+  return html;
+}
+function newCup(tier){const c=CUPS[tier];const used=new Set([CAR.name]);return {tier,round:0,opps:[0,1,2].map(i=>teamGen(c.base+i*4+Math.round(Math.random()*2-1),used))}}
+function cupAfter(won){
+  const C=CAR.cup;if(!C)return'';const cp=CUPS[C.tier];
+  if(!won){CAR.cup=null;return `<div class="card2"><div style="font-family:Oswald,sans-serif;font-size:18px;color:var(--l4)">Ude af ${cp.n} i ${CUPR[C.round].toLowerCase()}n.</div><div class="pmeta">Prøv igen, når holdet er blevet stærkere.</div></div>`}
+  C.round++;
+  if(C.round>=3){CAR.coins+=cp.prize;CAR.trophies=CAR.trophies||[];CAR.trophies.push(cp.n);CAR.cup=null;return `<div class="card2" style="border-color:#facc15"><div style="font-family:Oswald,sans-serif;font-size:22px;color:#facc15">🏆 Du vandt ${cp.n}! +${cp.prize.toLocaleString('da-DK')} mønter</div></div>`}
+  return `<div class="card2"><div style="font-family:Oswald,sans-serif;font-size:18px;color:var(--l1)">Videre til ${CUPR[C.round].toLowerCase()}n!</div><div class="pmeta">Næste modstander: ${C.opps[C.round].name} (rating ${C.opps[C.round].r})</div></div>`;
+}
+function buildBotClub(b){
+  const rng=srng(Math.floor(Math.random()*2e9));const used=new Set();
+  const pl=SLOTS.map(sl=>{const g=POSG[sl];const target=b.r+Math.round(rng()*6-3);
+    if(b.r>=79){const pool=REAL.filter(x=>x[1]===g&&!used.has(x[0])&&Math.abs(x[2]-target)<=4&&(b.r>=88||!x[3]));if(pool.length){const c=pool[Math.floor(rng()*pool.length)];used.add(c[0]);return [c[2],c[0],c[2]]}}
+    let f;do{f=fict(target,g,rng)}while(used.has(f.name));used.add(f.name);return [f.rating,f.name,f.rating]});
+  return {name:b.club,short:b.club,col:b.col,txt:b.txt,away:b.away,atxt:b.atxt,pl};
+}
+function startCareerMatch(bot,mode){
+  if(!bot||bot instanceof Event){bot=BOTS[CAR.bot||0];mode='friendly'}
+  const st=CAR.settings||{len:4,tk:15};
+  const k=KITS[CAR.kit||0];
+  const me={name:CAR.name,short:CAR.name,col:k[0],txt:k[1],away:'#f5f5f5',atxt:'#111',pl:SLOTS.map(sl=>{const p=ownedP(CAR.lineup[sl]);const r=effR(p,sl);return [r,p.name,r]})};
+  S.career=true;S.bot=bot;S.mode=mode;S.noPens=mode==='league';S.clubs=[me,buildBotClub(S.bot)];
+  S.who=['Dig','Computer'];S.names=S.clubs.map(c=>c.short);
+  COL=[S.clubs[0].col,S.clubs[1].col];TXT=[S.clubs[0].txt,S.clubs[1].txt];
+  if(cdist(COL[0],COL[1])<150){COL[1]=S.clubs[1].away;TXT[1]=S.clubs[1].atxt}
+  [0,1].forEach(t=>{$('bc'+t).style.background=COL[t];$('arrp'+t).setAttribute('fill',COL[t]);});
+  S.off=[S.bot.def,0];S.step=st.len;S.timer=false;S.tackleSec=st.tk;
+  $('t0').textContent=S.names[0];$('t1').textContent=S.names[1];
+  $('setup').classList.add('hidden');$('game').classList.remove('hidden');
+  newGame();
+}
+const pb=L=>clamp(S.bot.p-S.bot.lp*(L-1),0.1,0.97);
+function botTurn(){
+  const h=S.players[S.holder];
+  setStatus(`<b style="color:${tc(1)}">${h.name}</b> (${S.names[1]}) har bolden…`);
+  $('panel').innerHTML=`<div class="qhead"><span class="pill" style="background:#94a3b8">Computeren</span><span class="cat">${h.name} (${POSL[POSG[h.n]]}, ${h.rating}) overvejer sine muligheder</span></div><div class="tk" id="tk"></div><div class="feed">${S.feed.map(f=>`<div>${f}</div>`).join('')}</div>`;
+  if(S.tackleSec&&!h.gk){setTimeout(()=>{if(S.phase!=='bot'||!$('tk'))return;const ti=canTackle();if(ti<0){$('tk').innerHTML=noTackleMsg();return}const tp=S.players[ti];let l=Math.max(3,adj(TACKLV[tp.n],0,tp.rating));
+    $('tk').innerHTML=`<button class="tkbtn" id="tkgo" style="background:${COL[0]};color:${TXT[0]}">TACKL! ${tp.name}</button><span style="font-size:13px;color:var(--muted)">${POSL[POSG[tp.n]]}: <b style="color:${LV[l].c}">${LV[l].n}</b> spørgsmål</span>`;
+    $('tkgo').onclick=()=>doTackle(ti,l)},800)}
+  S.botT=setTimeout(()=>{if(S.phase!=='bot')return;botAct()},2600+Math.random()*900);
+}
+function botAct(){
+  const h=S.players[S.holder];const hA=toA(h,h.x);const opts=[];
+  S.players.forEach((p,i)=>{if(p.team!==h.team||i===S.holder)return;const L=passLevel(h,p);opts.push({type:'pass',to:i,level:L,gain:toA(p,p.x)-hA})});
+  for(let k=0;k<14;k++){const c=throughCand({x:toA(h,hA+rnd(12,32)),y:rnd(4,59)});if(c)opts.push({type:'through',to:c.to,pt:c.pt,level:c.level,gain:toA(h,c.pt.x)-hA})}
+  for(let k=0;k<8;k++){const c=dribbleCand({x:toA(h,hA+rnd(4,12)),y:h.y+rnd(-8,8)});if(c)opts.push({type:'dribble',pt:c.pt,level:c.level,gain:toA(h,c.pt.x)-hA})}
+  let best=null,bv=-1e9;
+  opts.forEach(o=>{const p=pb(o.level);const v=p*(o.gain+6)-(1-p)*14+rnd(0,4);if(v>bv){bv=v;best=o}});
+  const need=shotNeed(h);
+  if(need>0){const L=shotLevel(h);const pg=need>1?pb(4)*0.45:pb(L)*0.85;const v=pg*70-(1-pg)*8+rnd(0,6);if(v>bv){bv=v;best={type:'shot',level:L,need:1,got:0,pg}}}
+  if(!best){best={type:'pass',to:S.players.findIndex((p,i)=>p.team===h.team&&i!==S.holder),level:1}}
+  const ok=Math.random()<(best.type==='shot'?best.pg:pb(best.level));
+  S.action=best;S.phase='result';resolve(ok);
+}
+function botSetPiece(kind){
+  const h=S.players[S.holder];S.phase='kick';render();
+  if(kind==='pen'){h.x=toA(h,89);h.y=31.5;$('pl'+S.holder).style.transform=`translate(${px(h.x)}px,${py(h.y)}px)`;placeBall(toA(h,88.5),31.5)}
+  setStatus(`${kind==='pen'?'STRAFFESPARK':'Frispark'} til <b style="color:${tc(1)}">${S.names[1]}</b>! ${h.name} skyder…`);
+  $('panel').innerHTML=`<div class="qhead"><span class="pill" style="background:#94a3b8">Computeren</span><span class="cat">${h.name} skyder på ${kind==='pen'?'straffespark':'frispark'}</span></div><div id="resarea"></div>`;
+  setTimeout(()=>{const p=kind==='pen'?S.bot.pen:S.bot.pen*0.4;const r=Math.random()<p?'goal':'miss';setPieceDone(kind,h,1,r,r==='goal'?'g':'s')},1600);
+}
+function careerEnd(pens,w,big){
+  const b=S.bot;const res=pens?'d':S.score[0]>S.score[1]?'w':S.score[0]<S.score[1]?'l':'d';
+  const parts=[['Kamp spillet',40],[res==='w'?'Sejr':res==='d'?'Uafgjort':'Nederlag',res==='w'?120:res==='d'?50:0]];
+  if(pens&&w===0)parts.push(['Vundet straffesparkskonkurrence',30]);
+  const sub=parts.reduce((s,x)=>s+x[1],0);
+  const lines=parts.map(x=>[x[0],Math.round(x[1]*b.mult)]);
+  lines.push([`Mål (${S.score[0]} × 20)`,S.score[0]*20]);
+  lines.push([`Rigtige svar (${S.correct||0} × 4)`,(S.correct||0)*4]);
+  const total=Math.round(lines.reduce((s,x)=>s+x[1],0)/10)*10;
+  const grown=growPlayers();
+  CAR.coins+=total;CAR.stats.p++;CAR.stats[res]++;CAR.seed=Math.floor(Math.random()*2e9);saveCareer();
+  const head=res==='w'?'Sejr!':res==='l'?'Nederlag':!pens?'Uafgjort':(w===0?'Sejr på straffespark!':'Tabt på straffespark');
+  const compHtml=S.mode==='league'?leagueAfter():S.mode==='cup'?cupAfter(res==='w'||(pens&&w===0)):'';
+  saveCareer();
+  $('panel').innerHTML=`<div class="msg" style="font-family:Oswald,sans-serif;font-size:26px;color:${res==='l'||(res==='d'&&w===1)?'var(--l4)':res==='d'&&!pens?'#facc15':'var(--l1)'}">${head} ${S.score[0]}-${S.score[1]}${pens?` (${S.pens.k[0]}-${S.pens.k[1]} på straffe)`:''}</div>
+   <div class="pmeta" style="margin:4px 0 10px">Modstander: ${b.club} (${b.n}, mønter ×${b.mult})</div>
+   <div class="plist">${lines.map(x=>`<div style="display:flex;justify-content:space-between;font-size:15px;padding:4px 2px;border-bottom:1px solid var(--line)"><span>${x[0]}</span><b>+${x[1]}</b></div>`).join('')}
+   <div style="display:flex;justify-content:space-between;font-size:18px;padding:6px 2px"><b>I alt</b><b class="coins" style="font-size:22px">+${total.toLocaleString('da-DK')} mønter</b></div></div>
+   ${compHtml}
+   ${grown.length?`<div style="margin-top:12px"><div class="pmeta" style="margin-bottom:4px">Talenter i udvikling</div>${grown.map(g=>`<div style="font-size:14px;color:var(--l1)">▲ ${g}</div>`).join('')}</div>`:''}
+   <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn ghost" id="tohub">Til karrieren</button>${S.mode==='friendly'?`<button class="btn" id="again2">Spil igen mod ${b.club}</button>`:''}</div>`;
+  $('tohub').onclick=()=>{big.style.fontSize='';$('game').classList.add('hidden');$('setup').classList.remove('hidden');showMode('C');renderHub('hub')};
+  if($('again2'))$('again2').onclick=()=>{big.style.fontSize='';$('game').classList.add('hidden');$('setup').classList.remove('hidden');showMode('C');renderHub('hub');startCareerMatch(BOTS[CAR.bot||0],'friendly')};
+  $('tohub').onclick=()=>{big.style.fontSize='';$('game').classList.add('hidden');$('setup').classList.remove('hidden');showMode('C');renderHub(S.mode==='league'?'league':S.mode==='cup'?'cup':'hub')};
+}
+function showMode(m){$('tab2').classList.toggle('on',m==='2');$('tabC').classList.toggle('on',m==='C');$('mode2').classList.toggle('hidden',m!=='2');$('modeC').classList.toggle('hidden',m!=='C');if(m==='C')renderHub()}
+$('tab2').onclick=()=>showMode('2');$('tabC').onclick=()=>showMode('C');
+function seenInfo(){const tot=[1,2,3,4].reduce((s,k)=>s+BANK[k].length,0);const used=[1,2,3,4].reduce((s,k)=>s+BANK[k].filter(q=>SEEN.has(qKey(q))).length,0);$('seeninfo').textContent=`${used} af ${tot} spørgsmål er brugt`}
+$('resetseen').onclick=()=>{SEEN.clear();saveSeen();seenInfo()};seenInfo();
+stripes();
+['c0','c1'].forEach((id,t)=>{const s=$(id);s.innerHTML=CLUBS.map((c,i)=>`<option value="${i}">${c.name}</option>`).join('');s.value=t?4:0;
+  const upd=()=>$('sc'+t).style.background=CLUBS[+s.value].col;s.onchange=upd;upd();});
+</script>
+</body>
+</html>
